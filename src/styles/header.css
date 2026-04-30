@@ -17,7 +17,15 @@
   align-items: center;
   justify-content: space-between;
   height: 100%;
-  gap: 24px;
+  gap: 16px;
+}
+
+/* Левая часть */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
 }
 
 /* Logo */
@@ -46,24 +54,119 @@
   color: var(--text-primary);
 }
 
-.logo-text span {
+.logo-text span { color: var(--accent); }
+
+/* Селектор города */
+.city-selector { position: relative; }
+
+.city-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.city-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.city-btn svg { color: var(--accent); }
+
+.city-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 200px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  z-index: 200;
+}
+
+.city-option {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text-primary);
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.city-option:hover { background: var(--bg-hover); }
+.city-option.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+
+/* Поиск */
+.header-search {
+  flex: 1;
+  max-width: 460px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 40px;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.header-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.header-search svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.header-search input {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.header-search input::placeholder { color: var(--text-muted); }
+
+.header-search-clear {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.header-search-clear:hover {
   color: var(--accent);
 }
 
 /* Nav */
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .nav-link {
-  padding: 8px 16px;
+  padding: 8px 14px;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
   border-radius: 8px;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -77,11 +180,12 @@
   font-weight: 600;
 }
 
-/* Actions */
+/* Действия */
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .header-btn {
@@ -103,6 +207,11 @@
   color: var(--accent);
 }
 
+.header-btn.active {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
 .header-btn svg {
   width: 20px;
   height: 20px;
@@ -111,13 +220,14 @@
   fill: none;
 }
 
-.cart-badge {
+.header-badge {
   position: absolute;
   top: 2px;
   right: 2px;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
-  border-radius: 50%;
+  padding: 0 5px;
+  border-radius: 9px;
   background: var(--accent);
   color: #fff;
   font-size: 11px;
@@ -128,7 +238,7 @@
   line-height: 1;
 }
 
-/* Theme toggle */
+/* Тема */
 .theme-toggle {
   width: 40px;
   height: 40px;
@@ -141,11 +251,9 @@
   background: transparent;
 }
 
-.theme-toggle:hover {
-  background: var(--bg-hover);
-}
+.theme-toggle:hover { background: var(--bg-hover); }
 
-/* Mobile */
+/* Мобильная кнопка */
 .mobile-menu-btn {
   display: none;
   width: 40px;
@@ -158,7 +266,17 @@
   font-size: 22px;
 }
 
+@media (max-width: 1100px) {
+  .nav-link { display: none; }
+}
+
+@media (max-width: 900px) {
+  .city-btn span:first-of-type { display: none; }
+  .header-search { max-width: 240px; }
+}
+
 @media (max-width: 768px) {
-  .nav-links { display: none; }
+  .header-search { display: none; }
+  .city-btn { padding: 8px; }
   .mobile-menu-btn { display: flex; }
 }

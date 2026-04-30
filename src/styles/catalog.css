@@ -3,10 +3,115 @@
 }
 
 .catalog-page .section-title {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
-/* Category chips */
+.catalog-intro {
+  color: var(--text-muted);
+  margin-bottom: 28px;
+  font-size: 15px;
+}
+
+/* ===========================
+   КАРТОЧКИ КАТЕГОРИЙ (Xiaomi-style)
+   =========================== */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.cat-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 150px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  color: var(--text-primary);
+}
+
+.cat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 100% 0%, var(--accent-light), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.cat-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.cat-card:hover::before { opacity: 1; }
+
+.cat-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+
+.cat-card-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cat-card-from {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.cat-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 6px;
+  transition: gap 0.2s;
+}
+
+.cat-card:hover .cat-card-link { gap: 10px; }
+
+.cat-card-icon {
+  font-size: 64px;
+  z-index: 1;
+  transition: transform 0.3s;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.15));
+}
+
+.cat-card:hover .cat-card-icon { transform: scale(1.1) rotate(-6deg); }
+
+.cat-card-count {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 3px 9px;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 100px;
+  z-index: 1;
+}
+
+/* ===========================
+   ЧИПЫ КАТЕГОРИЙ
+   =========================== */
 .category-bar {
   display: flex;
   gap: 8px;
@@ -21,7 +126,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 10px 18px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 100px;
@@ -59,7 +164,158 @@
   background: rgba(255,255,255,0.2);
 }
 
-/* Toolbar */
+/* ===========================
+   LAYOUT: фильтр + контент
+   =========================== */
+.catalog-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.catalog-content { min-width: 0; }
+
+.catalog-filter-mobile-btn {
+  display: none;
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+/* ===========================
+   ФИЛЬТР
+   =========================== */
+.catalog-filter {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 18px;
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.catalog-filter::-webkit-scrollbar { width: 6px; }
+.catalog-filter::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.catalog-filter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.catalog-filter-head h3 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.catalog-filter-reset {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.catalog-filter-reset:hover { text-decoration: underline; }
+
+.catalog-filter-section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.catalog-filter-section:last-child { border-bottom: none; }
+
+.catalog-filter-title,
+.catalog-filter-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 0;
+  cursor: pointer;
+  background: transparent;
+}
+
+.catalog-filter-title { cursor: default; margin-bottom: 8px; }
+
+.catalog-filter-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.catalog-filter-price input {
+  flex: 1;
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.catalog-filter-price input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.catalog-filter-price span { color: var(--text-muted); }
+
+.catalog-filter-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.catalog-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.catalog-filter-option:hover { color: var(--text-primary); }
+
+.catalog-filter-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.catalog-filter-more {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  text-align: left;
+  padding: 4px 0;
+}
+.catalog-filter-more:hover { text-decoration: underline; }
+
+/* ===========================
+   ТУЛБАР, EMPTY
+   =========================== */
 .catalog-toolbar {
   display: flex;
   align-items: center;
@@ -86,7 +342,7 @@
 
 .catalog-empty {
   text-align: center;
-  padding: 80px 0;
+  padding: 60px 0;
   color: var(--text-muted);
 }
 
@@ -94,4 +350,12 @@
   font-size: 48px;
   margin-bottom: 16px;
   opacity: 0.4;
+}
+
+@media (max-width: 900px) {
+  .catalog-body { grid-template-columns: 1fr; }
+  .catalog-filter-mobile-btn { display: block; }
+  .catalog-filter-wrap { display: none; }
+  .catalog-filter-wrap.open { display: block; margin-bottom: 16px; }
+  .catalog-filter { position: static; max-height: none; }
 }

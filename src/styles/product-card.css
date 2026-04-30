@@ -42,6 +42,61 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+.product-card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 2;
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.product-card:hover .product-card-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.product-card-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.product-card-icon-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.product-card-icon-btn.active.fav {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.product-card-icon-btn.active.cmp {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .product-card-actions { opacity: 1; transform: none; }
+  .product-card-icon-btn { width: 28px; height: 28px; }
 }
 
 .badge-new { background: var(--accent); color: #fff; }

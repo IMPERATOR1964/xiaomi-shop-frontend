@@ -13,10 +13,6 @@ export default function HomePage() {
       <section className="hero">
         <div className="container hero-inner">
           <div className="hero-content">
-            <div className="hero-badge">
-              <span className="hero-badge-dot"></span>
-              Официальный партнёр Xiaomi
-            </div>
             <h1 className="hero-title">
               Мир <span className="highlight">Xiaomi</span><br />
               в одном месте
