@@ -1,41 +1,56 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../data/products';
+import { Loading, EmptyState } from '../components/UiStates';
 import '../styles/cart.css';
 
 export default function CartPage() {
-  const { cart, updateQty, removeFromCart, cartTotal, cartCount } = useCart();
+  const { cart, updateQty, removeFromCart, cartTotal, cartCount, loading, error } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  if (loading) {
+    return <div className="cart-page"><div className="container"><Loading label="Загружаем корзину..." /></div></div>;
+  }
 
   if (cart.length === 0) {
     return (
       <div className="cart-page">
         <div className="container">
           <h1 className="section-title">Корзина</h1>
-          <div className="cart-empty">
-            <div className="cart-empty-icon">🛒</div>
-            <h2>Корзина пуста</h2>
-            <p>Добавьте товары из каталога</p>
-            <Link to="/catalog" className="btn-primary">Перейти в каталог</Link>
-          </div>
+          <EmptyState icon="🛒" title="Корзина пуста — добавьте товары из каталога" cta="Перейти в каталог" ctaHref="/catalog" />
         </div>
       </div>
     );
   }
 
+  const goCheckout = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    navigate('/checkout');
+  };
+
   return (
     <div className="cart-page">
       <div className="container">
         <h1 className="section-title">Корзина ({cartCount})</h1>
+        {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
 
         <div className="cart-layout">
-          {/* Items */}
           <div className="cart-items">
             {cart.map(item => (
               <div className="cart-item" key={item.id}>
-                <div className="cart-item-image">{item.image}</div>
+                <div className="cart-item-image">
+                  {item.imageUrl
+                    ? <img src={item.imageUrl} alt={item.name} className="cart-item-photo" />
+                    : (item.image || '⚡')}
+                </div>
                 <div className="cart-item-info">
                   <Link to={`/product/${item.id}`} className="cart-item-name">{item.name}</Link>
-                  <p className="cart-item-desc">{item.shortDesc}</p>
+                  {item.shortDesc && <p className="cart-item-desc">{item.shortDesc}</p>}
                 </div>
                 <div className="cart-item-qty">
                   <button onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
@@ -48,7 +63,6 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Summary */}
           <div className="cart-summary">
             <h3 className="cart-summary-title">Ваш заказ</h3>
             <div className="cart-summary-row">
@@ -63,7 +77,9 @@ export default function CartPage() {
               <span>Итого</span>
               <span>{formatPrice(cartTotal)}</span>
             </div>
-            <button className="btn-primary">Оформить заказ</button>
+            <button className="btn-primary" onClick={goCheckout}>
+              {isAuthenticated ? 'Оформить заказ' : 'Войти и оформить'}
+            </button>
           </div>
         </div>
       </div>

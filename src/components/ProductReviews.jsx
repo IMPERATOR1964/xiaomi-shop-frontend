@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useReviews } from '../context/ReviewsContext';
 import { useAuth } from '../context/AuthContext';
+import { ApiError } from '../api';
 
 const Star = ({ filled, half, onClick, onMouseEnter, onMouseLeave }) => (
   <svg
@@ -57,25 +59,50 @@ const formatDate = (iso) => {
 };
 
 export default function ProductReviews({ productId }) {
-  const { addReview, getReviews, getAverageRating } = useReviews();
-  const { user } = useAuth();
+  const { loadReviews, addReview, getReviews, getAverageRating, getReviewsCount } = useReviews();
+  const { isAuthenticated } = useAuth();
 
   const reviews = getReviews(productId);
-  const avg = getAverageRating(productId);
+  const avg     = getAverageRating(productId);
+  const total   = getReviewsCount(productId);
 
-  const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [author, setAuthor] = useState(user?.name || '');
-  const [pros, setPros] = useState('');
-  const [cons, setCons] = useState('');
-  const [text, setText] = useState('');
+  const [open, setOpen]       = useState(false);
+  const [rating, setRating]   = useState(5);
+  const [title, setTitle]     = useState('');
+  const [text, setText]       = useState('');
+  const [error, setError]     = useState('');
+  const [busy,  setBusy]      = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e) => {
+  useEffect(() => {
+    if (!productId) return;
+    let alive = true;
+    setLoading(true);
+    loadReviews(productId)
+      .catch(() => {})
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [productId, loadReviews]);
+
+  const submit = async (e) => {
     e.preventDefault();
-    if (!text.trim() && !pros.trim() && !cons.trim()) return;
-    addReview(productId, { author: author || user?.name || 'Аноним', rating, pros, cons, text });
-    setOpen(false);
-    setRating(5); setPros(''); setCons(''); setText('');
+    setError('');
+    if (!text.trim() && !title.trim()) {
+      setError('Напишите комментарий или заголовок');
+      return;
+    }
+    setBusy(true);
+    try {
+      await addReview(productId, { rating, title, comment: text });
+      setOpen(false);
+      setRating(5); setTitle(''); setText('');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) setError('Войдите, чтобы оставить отзыв');
+      else if (err instanceof ApiError && err.status === 409) setError('Вы уже оставили отзыв');
+      else setError(err?.message || 'Не удалось отправить отзыв');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -83,58 +110,41 @@ export default function ProductReviews({ productId }) {
       <div className="reviews-head">
         <div>
           <h2 className="reviews-title">Отзывы</h2>
-          {reviews.length > 0 ? (
+          {total > 0 ? (
             <div className="reviews-summary">
               <StarRating value={avg} readonly />
               <span className="reviews-avg">{avg.toFixed(1)}</span>
-              <span className="reviews-count">{reviews.length} отзыв{reviews.length === 1 ? '' : (reviews.length < 5 ? 'а' : 'ов')}</span>
+              <span className="reviews-count">{total} отзыв{total === 1 ? '' : (total < 5 ? 'а' : 'ов')}</span>
             </div>
-          ) : (
+          ) : !loading && (
             <p className="reviews-empty-hint">Будьте первым, кто оставит отзыв</p>
           )}
         </div>
-        <button className="btn-primary btn-sm" onClick={() => setOpen(o => !o)}>
-          {open ? 'Отмена' : 'Написать отзыв'}
-        </button>
+        {isAuthenticated ? (
+          <button className="btn-primary btn-sm" onClick={() => setOpen(o => !o)}>
+            {open ? 'Отмена' : 'Написать отзыв'}
+          </button>
+        ) : (
+          <Link to="/login" className="btn-outline btn-sm">Войти, чтобы оставить отзыв</Link>
+        )}
       </div>
 
-      {open && (
+      {open && isAuthenticated && (
         <form className="review-form" onSubmit={submit}>
+          {error && <div className="auth-error">{error}</div>}
           <div className="review-form-row">
             <label className="review-form-label">Ваша оценка</label>
             <StarRating value={rating} onChange={setRating} />
           </div>
           <div className="review-form-row">
-            <label className="review-form-label">Имя</label>
+            <label className="review-form-label">Заголовок</label>
             <input
               type="text"
-              value={author}
-              onChange={e => setAuthor(e.target.value)}
-              placeholder={user?.name || 'Ваше имя'}
-              maxLength={40}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Кратко о товаре"
+              maxLength={255}
             />
-          </div>
-          <div className="review-form-grid">
-            <div className="review-form-row">
-              <label className="review-form-label">Достоинства</label>
-              <textarea
-                value={pros}
-                onChange={e => setPros(e.target.value)}
-                placeholder="Что понравилось"
-                rows={3}
-                maxLength={400}
-              />
-            </div>
-            <div className="review-form-row">
-              <label className="review-form-label">Недостатки</label>
-              <textarea
-                value={cons}
-                onChange={e => setCons(e.target.value)}
-                placeholder="Что не понравилось"
-                rows={3}
-                maxLength={400}
-              />
-            </div>
           </div>
           <div className="review-form-row">
             <label className="review-form-label">Комментарий</label>
@@ -142,11 +152,13 @@ export default function ProductReviews({ productId }) {
               value={text}
               onChange={e => setText(e.target.value)}
               placeholder="Расскажите подробнее..."
-              rows={4}
-              maxLength={1000}
+              rows={5}
+              maxLength={5000}
             />
           </div>
-          <button type="submit" className="btn-primary">Отправить отзыв</button>
+          <button type="submit" className="btn-primary" disabled={busy}>
+            {busy ? 'Отправляем…' : 'Отправить отзыв'}
+          </button>
         </form>
       )}
 
@@ -156,7 +168,7 @@ export default function ProductReviews({ productId }) {
             <div key={r.id} className="review-item">
               <div className="review-item-head">
                 <div className="review-author">
-                  <div className="review-avatar">{r.author.charAt(0).toUpperCase()}</div>
+                  <div className="review-avatar">{(r.author || 'U').charAt(0).toUpperCase()}</div>
                   <div>
                     <div className="review-author-name">{r.author}</div>
                     <div className="review-date">{formatDate(r.date)}</div>
@@ -164,12 +176,7 @@ export default function ProductReviews({ productId }) {
                 </div>
                 <StarRating value={r.rating} readonly />
               </div>
-              {(r.pros || r.cons) && (
-                <div className="review-pros-cons">
-                  {r.pros && <div className="review-pros"><b>+</b> {r.pros}</div>}
-                  {r.cons && <div className="review-cons"><b>−</b> {r.cons}</div>}
-                </div>
-              )}
+              {r.title && <div style={{ fontWeight: 700, marginBottom: 6 }}>{r.title}</div>}
               {r.text && <p className="review-text">{r.text}</p>}
             </div>
           ))}

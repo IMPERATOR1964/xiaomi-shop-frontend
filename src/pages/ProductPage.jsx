@@ -1,13 +1,15 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCompare } from '../context/CompareContext';
-import { PRODUCTS, CATEGORIES, formatPrice, formatSKU } from '../data/products';
+import { CATEGORIES, formatPrice, formatSKU } from '../data/products';
+import { productsApi } from '../api';
 import ProductVariants from '../components/ProductVariants';
 import ShareButton from '../components/ShareButton';
 import SimilarProducts from '../components/SimilarProducts';
 import ProductReviews, { StarRating } from '../components/ProductReviews';
-import { useReviews } from '../context/ReviewsContext';
+import { Loading } from '../components/UiStates';
 import '../styles/product.css';
 
 export default function ProductPage() {
@@ -16,15 +18,32 @@ export default function ProductPage() {
   const { addToCart } = useCart();
   const { has: isFav, toggle: toggleFav } = useFavorites();
   const { has: isCmp, toggle: toggleCmp } = useCompare();
-  const { getReviews, getAverageRating } = useReviews();
 
-  const product = PRODUCTS.find(p => p.id === Number(id));
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
 
-  if (!product) {
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    setLoading(true);
+    setError(null);
+    productsApi.byId(id)
+      .then(p => { if (alive) setProduct(p); })
+      .catch(err => { if (alive) setError(err?.message || 'Товар не найден'); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [id]);
+
+  if (loading) {
+    return <div className="container" style={{ padding: '32px 0' }}><Loading label="Загружаем товар..." /></div>;
+  }
+  if (error || !product) {
     return (
       <div className="container" style={{ padding: '80px 0', textAlign: 'center' }}>
         <h2>Товар не найден</h2>
-        <Link to="/catalog" className="btn-primary" style={{ marginTop: '20px' }}>
+        <p style={{ color: 'var(--text-muted)', margin: '12px 0' }}>{error}</p>
+        <Link to="/catalog" className="btn-primary" style={{ marginTop: 20 }}>
           Вернуться в каталог
         </Link>
       </div>
@@ -34,8 +53,8 @@ export default function ProductPage() {
   const catLabel = CATEGORIES.find(c => c.id === product.category)?.label || '';
   const fav = isFav(product.id);
   const cmp = isCmp(product.id);
-  const reviews = getReviews(product.id);
-  const avg = getAverageRating(product.id);
+  const avg = product.averageRating || 0;
+  const reviewsCount = product.reviewsCount || 0;
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -45,7 +64,6 @@ export default function ProductPage() {
   return (
     <div className="product-page">
       <div className="container">
-        {/* Хлебные крошки */}
         <div className="product-breadcrumb">
           <Link to="/">Главная</Link>
           <span>/</span>
@@ -56,15 +74,12 @@ export default function ProductPage() {
           <span>{product.name}</span>
         </div>
 
-        {/* Детали товара */}
         <div className="product-detail">
           <div className="product-detail-image">
-            {product.image}
-            {product.badge && (
-              <span className={`product-card-badge badge-${product.badge}`} style={{ position: 'absolute', top: 16, left: 16 }}>
-                {product.badge === 'new' ? 'Новинка' : product.badge === 'sale' ? 'Скидка' : 'Хит'}
-              </span>
-            )}
+            {product.imageUrl
+              ? <img src={product.imageUrl} alt={product.name} className="product-detail-photo" />
+              : product.image
+            }
           </div>
 
           <div className="product-detail-info">
@@ -75,12 +90,11 @@ export default function ProductPage() {
 
             <h1 className="product-detail-name">{product.name}</h1>
 
-            {/* Рейтинг */}
             <div className="product-detail-rating">
               <StarRating value={avg} readonly />
-              {reviews.length > 0 ? (
+              {reviewsCount > 0 ? (
                 <a href="#reviews" className="product-detail-rating-link">
-                  {avg.toFixed(1)} · {reviews.length} отзыв{reviews.length === 1 ? '' : (reviews.length < 5 ? 'а' : 'ов')}
+                  {avg.toFixed(1)} · {reviewsCount} отзыв{reviewsCount === 1 ? '' : (reviewsCount < 5 ? 'а' : 'ов')}
                 </a>
               ) : (
                 <a href="#reviews" className="product-detail-rating-link product-detail-rating-empty">Нет отзывов</a>
@@ -89,10 +103,8 @@ export default function ProductPage() {
 
             <p className="product-detail-desc">{product.desc}</p>
 
-            {/* Варианты */}
             <ProductVariants product={product} />
 
-            {/* Цена */}
             <div className="product-detail-price-row">
               <span className="product-detail-price">{formatPrice(product.price)}</span>
               {product.oldPrice && (
@@ -105,7 +117,6 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* Кнопки */}
             <div className="product-detail-actions">
               <button className="btn-primary product-cart-main" onClick={handleAddToCart}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -139,7 +150,6 @@ export default function ProductPage() {
               <ShareButton product={product} />
             </div>
 
-            {/* Доставка/гарантия */}
             <div className="product-features">
               <div className="product-feature">
                 <span className="product-feature-icon">🚚</span>
@@ -165,8 +175,7 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Характеристики */}
-        {product.specs && (
+        {product.specs && Object.keys(product.specs).length > 0 && (
           <section className="product-specs-block">
             <h2 className="product-specs-title">Характеристики</h2>
             <div className="product-specs-grid">
@@ -180,13 +189,11 @@ export default function ProductPage() {
           </section>
         )}
 
-        {/* Отзывы */}
         <section id="reviews" style={{ scrollMarginTop: 80 }}>
           <ProductReviews productId={product.id} />
         </section>
 
-        {/* Похожие товары */}
-        <SimilarProducts product={product} />
+        <SimilarProducts productId={product.id} />
       </div>
     </div>
   );

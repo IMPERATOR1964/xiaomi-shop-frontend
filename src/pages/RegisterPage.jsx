@@ -1,37 +1,60 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ApiError } from '../api';
 import '../styles/auth.css';
 
 export default function RegisterPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
-  const [error, setError] = useState('');
-  const { login } = useAuth();
+  const [error, setError]   = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
-    if (!name || !email || !password || !password2) {
+    if (!username || !email || !password || !password2) {
       setError('Заполните все поля');
+      return;
+    }
+    if (username.length < 3 || username.length > 20) {
+      setError('Логин должен быть от 3 до 20 символов');
       return;
     }
     if (password !== password2) {
       setError('Пароли не совпадают');
       return;
     }
-    if (password.length < 6) {
-      setError('Пароль должен содержать минимум 6 символов');
+    if (password.length < 8) {
+      setError('Пароль должен содержать минимум 8 символов');
       return;
     }
 
-    // Mock — later replaced with backend API
-    login({ name, email });
-    navigate('/profile');
+    setLoading(true);
+    try {
+      await register({ username: username.trim(), email: email.trim(), password });
+      setSuccess('Аккаунт создан. На вашу почту отправлено письмо для подтверждения email.');
+      setTimeout(() => navigate('/profile'), 1500);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const msg = String(err.message || '').toLowerCase();
+        if (msg.includes('username') || msg.includes('exist')) setError('Такой логин уже занят');
+        else if (msg.includes('email')) setError('Этот email уже зарегистрирован');
+        else setError(err.message);
+      } else {
+        setError('Не удалось создать аккаунт. Попробуйте позже.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,17 +63,20 @@ export default function RegisterPage() {
         <h1 className="auth-title">Регистрация</h1>
         <p className="auth-subtitle">Создайте аккаунт в Voltix</p>
 
-        {error && <div className="auth-error">{error}</div>}
+        {error   && <div className="auth-error">{error}</div>}
+        {success && <div className="auth-success">{success}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Имя</label>
+            <label className="form-label">Логин</label>
             <input
               className="form-input"
               type="text"
-              placeholder="Ваше имя"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              placeholder="3–20 символов, латиница"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              autoComplete="username"
+              maxLength={20}
             />
           </div>
 
@@ -62,6 +88,7 @@ export default function RegisterPage() {
               placeholder="mail@example.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              autoComplete="email"
             />
           </div>
 
@@ -70,9 +97,10 @@ export default function RegisterPage() {
             <input
               className="form-input"
               type="password"
-              placeholder="Минимум 6 символов"
+              placeholder="Минимум 8 символов"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              autoComplete="new-password"
             />
           </div>
 
@@ -84,10 +112,13 @@ export default function RegisterPage() {
               placeholder="Повторите пароль"
               value={password2}
               onChange={e => setPassword2(e.target.value)}
+              autoComplete="new-password"
             />
           </div>
 
-          <button type="submit" className="auth-submit">Создать аккаунт</button>
+          <button type="submit" className="auth-submit" disabled={loading}>
+            {loading ? 'Создаём…' : 'Создать аккаунт'}
+          </button>
         </form>
 
         <p className="auth-switch">

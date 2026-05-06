@@ -1,0 +1,144 @@
+.orders-page {
+  padding: 32px 0 64px;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+.order-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.order-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.order-card-id {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.order-card-date {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.order-card-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.order-card-item {
+  font-size: 13px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+
+.order-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.order-card-foot strong {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.order-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 100px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.order-status-pending   { background: rgba(255, 152, 0, 0.12); color: #FF9800; }
+.order-status-paid      { background: rgba(33, 150, 243, 0.12); color: #2196F3; }
+.order-status-shipped   { background: rgba(156, 39, 176, 0.12); color: #9C27B0; }
+.order-status-delivered { background: rgba(0, 179, 65, 0.12);  color: var(--success); }
+.order-status-cancelled { background: rgba(229, 57, 53, 0.12); color: var(--danger); }
+
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.order-detail-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.order-detail-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  align-items: center;
+}
+.order-detail-item:last-child { border-bottom: none; }
+
+.order-detail-name {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.order-detail-sku {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.order-detail-qty {
+  color: var(--text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.order-detail-total {
+  font-weight: 800;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .order-detail-grid { grid-template-columns: 1fr; }
+  .order-detail-item { grid-template-columns: 1fr 1fr; }
+  .order-detail-name { grid-column: 1 / -1; }
+}

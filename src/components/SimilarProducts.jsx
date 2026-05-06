@@ -1,15 +1,33 @@
+import { useEffect, useState } from 'react';
 import ProductCard from './ProductCard';
-import { getSimilarProducts } from '../data/products';
+import { ProductCardSkeleton } from './UiStates';
+import { productsApi } from '../api';
 
-export default function SimilarProducts({ product, count = 4 }) {
-  const items = getSimilarProducts(product, count);
-  if (!items.length) return null;
+export default function SimilarProducts({ productId, count = 4 }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!productId) return;
+    let alive = true;
+    setLoading(true);
+    productsApi.similar(productId, count)
+      .then(list => { if (alive) setItems(list); })
+      .catch(() => { if (alive) setItems([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [productId, count]);
+
+  if (!loading && items.length === 0) return null;
 
   return (
     <section className="similar">
       <h2 className="similar-title">Похожие товары</h2>
       <div className="products-grid">
-        {items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+        {loading
+          ? <ProductCardSkeleton count={count} />
+          : items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
+        }
       </div>
     </section>
   );

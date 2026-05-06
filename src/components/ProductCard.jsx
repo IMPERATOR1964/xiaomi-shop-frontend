@@ -49,7 +49,10 @@ export default function ProductCard({ product, index = 0 }) {
             </svg>
           </button>
         </div>
-        <span className="product-card-emoji">{product.image}</span>
+        {product.imageUrl
+          ? <img src={product.imageUrl} alt={product.name} loading="lazy" className="product-card-photo" />
+          : <span className="product-card-emoji">{product.image}</span>
+        }
       </Link>
 
       <div className="product-card-body">

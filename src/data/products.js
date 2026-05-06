@@ -4,19 +4,28 @@
 // После подключения бэка этот файл заменяется на fetch('/api/products').
 
 export const CATEGORIES = [
-  { id: 'all',         label: 'Все товары',  icon: '⚡', backendId: null, backendName: null },
+  { id: 'all',         label: 'Все товары',  icon: '⚡',  backendId: null, backendName: null },
   { id: 'smartphones', label: 'Смартфоны',   icon: '📱', backendId: 1, backendName: 'Смартфоны Xiaomi' },
   { id: 'cases',       label: 'Чехлы',       icon: '🛡️', backendId: 2, backendName: 'Чехлы для телефонов' },
   { id: 'chargers',    label: 'Зарядки',     icon: '🔌', backendId: 3, backendName: 'Зарядные устройства Xiaomi' },
   { id: 'powerbanks',  label: 'Повербанки',  icon: '🔋', backendId: 4, backendName: 'Повербанки Xiaomi' },
   { id: 'earphones',   label: 'Наушники',    icon: '🎧', backendId: 5, backendName: 'TWS Наушники Xiaomi' },
   { id: 'glass',       label: 'Стёкла',      icon: '🔲', backendId: 6, backendName: 'Защитные стёкла' },
+  { id: 'watches',     label: 'Часы',        icon: '⌚', backendId: 7, backendName: 'Смарт-часы и браслеты Xiaomi' },
+  { id: 'tablets',     label: 'Планшеты',    icon: '📱', backendId: 8, backendName: 'Планшеты Xiaomi' },
 ];
 
 // Маппинг backend-имени категории → frontend-slug.
-// Используется при подключении API: бэк отдаёт categoryName строкой.
 export const categorySlugByBackendName = (name) => {
+  if (!name) return 'all';
   const c = CATEGORIES.find(x => x.backendName === name);
+  return c?.id || 'all';
+};
+
+// Маппинг backend categoryId → frontend-slug (надёжнее, чем по имени).
+export const categorySlugByBackendId = (id) => {
+  if (id == null) return 'all';
+  const c = CATEGORIES.find(x => x.backendId === Number(id));
   return c?.id || 'all';
 };
 
@@ -512,6 +521,32 @@ export const FILTER_CONFIG = {
   glass: [
     { key: 'Совместимая модель', label: 'Под модель' },
     { key: 'Тип',                label: 'Тип' },
+  ],
+  watches: [
+    { key: 'Модель',            label: 'Модель' },
+    { key: 'Цвет',              label: 'Цвет' },
+    { key: 'Цвет ремешка',      label: 'Цвет ремешка' },
+    { key: 'Материал корпуса',  label: 'Материал' },
+    { key: 'Диагональ экрана',  label: 'Диагональ' },
+    { key: 'Тип экрана',        label: 'Тип экрана' },
+    { key: 'Защита от воды',    label: 'Защита' },
+    { key: 'GPS',               label: 'GPS' },
+    { key: 'NFC',               label: 'NFC' },
+    { key: 'Bluetooth-звонки',  label: 'Bluetooth-звонки' },
+    { key: 'Пульсометр',        label: 'Пульсометр' },
+  ],
+  tablets: [
+    { key: 'Модель',                label: 'Модель' },
+    { key: 'Цвет',                  label: 'Цвет' },
+    { key: 'Объём ОЗУ',             label: 'ОЗУ' },
+    { key: 'Объём накопителя',      label: 'Накопитель' },
+    { key: 'Диагональ экрана',      label: 'Диагональ' },
+    { key: 'Тип матрицы',           label: 'Тип экрана' },
+    { key: 'Частота обновления',    label: 'Частота' },
+    { key: 'Процессор',             label: 'Процессор' },
+    { key: 'Поддержка стилуса',     label: 'Стилус' },
+    { key: 'Поддержка клавиатуры',  label: 'Клавиатура' },
+    { key: 'Связь',                 label: 'Связь' },
   ],
 };
 

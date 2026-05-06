@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavoritesContext';
+import { useCompare } from '../context/CompareContext';
+import { useCart } from '../context/CartContext';
 import '../styles/auth.css';
 
 export default function ProfilePage() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, isStaff, isAdmin } = useAuth();
+  const { count: favCount } = useFavorites();
+  const { count: cmpCount } = useCompare();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
+
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState('');
 
@@ -31,7 +38,7 @@ export default function ProfilePage() {
   const cancelEdit = () => setEditing(false);
 
   const handleKey = (e) => {
-    if (e.key === 'Enter') saveEdit();
+    if (e.key === 'Enter')  saveEdit();
     if (e.key === 'Escape') cancelEdit();
   };
 
@@ -39,6 +46,9 @@ export default function ProfilePage() {
     logout();
     navigate('/');
   };
+
+  const Badge = ({ n }) =>
+    n > 0 ? <span style={{ marginLeft: 'auto', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 100 }}>{n}</span> : null;
 
   return (
     <div className="profile-page">
@@ -89,14 +99,26 @@ export default function ProfilePage() {
 
           <div className="profile-menu">
             <button className="profile-menu-item" onClick={() => navigate('/cart')}>
-              🛒 Корзина
+              🛒 Корзина <Badge n={cartCount} />
             </button>
-            <button className="profile-menu-item">
+            <button className="profile-menu-item" onClick={() => navigate('/orders')}>
               📦 Мои заказы
             </button>
-            <button className="profile-menu-item">
-              ❤️ Избранное
+            <button className="profile-menu-item" onClick={() => navigate('/favorites')}>
+              ❤️ Избранное <Badge n={favCount} />
             </button>
+            <button className="profile-menu-item" onClick={() => navigate('/compare')}>
+              ⚖️ Сравнение <Badge n={cmpCount} />
+            </button>
+            {isStaff && (
+              <button
+                className="profile-menu-item"
+                onClick={() => navigate('/admin')}
+                style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
+              >
+                ⚙️ {isAdmin ? 'Админ-панель' : 'Панель модератора'}
+              </button>
+            )}
             <button className="profile-menu-item danger" onClick={handleLogout}>
               🚪 Выйти из аккаунта
             </button>

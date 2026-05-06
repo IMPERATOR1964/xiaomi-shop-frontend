@@ -1,44 +1,60 @@
-import { createContext, useContext, useState } from 'react';
+// Отзывы через бэк-API. Кэшируем в памяти контекста по productId.
+
+import { createContext, useContext, useState, useCallback } from 'react';
+import { reviewsApi } from '../api';
 
 const ReviewsContext = createContext();
 
 export function ReviewsProvider({ children }) {
-  const [reviews, setReviews] = useState(() => {
-    try {
-      const raw = localStorage.getItem('voltix-reviews');
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
-  });
+  const [byProduct, setByProduct] = useState({}); // { [productId]: { items, total, avg } }
 
-  const persist = (next) => {
-    setReviews(next);
-    localStorage.setItem('voltix-reviews', JSON.stringify(next));
+  const setEntry = (productId, patch) => {
+    setByProduct(prev => ({
+      ...prev,
+      [productId]: { ...(prev[productId] || {}), ...patch },
+    }));
   };
 
-  const addReview = (productId, review) => {
-    const list = reviews[productId] || [];
-    const item = {
-      id: Date.now(),
-      author:  review.author || 'Аноним',
-      rating:  Number(review.rating) || 5,
-      text:    review.text || '',
-      pros:    review.pros || '',
-      cons:    review.cons || '',
-      date:    new Date().toISOString(),
-    };
-    persist({ ...reviews, [productId]: [item, ...list] });
-  };
+  const loadReviews = useCallback(async (productId) => {
+    const res = await reviewsApi.forProduct(productId, { size: 50 });
+    const summary = await reviewsApi.summary(productId).catch(() => null);
+    setEntry(productId, {
+      items: res.items,
+      total: res.total,
+      avg:   summary?.averageRating ?? (res.items.reduce((s, r) => s + r.rating, 0) / (res.items.length || 1)),
+    });
+    return res.items;
+  }, []);
 
-  const getReviews = (productId) => reviews[productId] || [];
+  const addReview = useCallback(async (productId, { rating, title, comment }) => {
+    const created = await reviewsApi.create(productId, { rating, title, comment });
+    setByProduct(prev => {
+      const cur = prev[productId] || { items: [], total: 0, avg: 0 };
+      const items = [created, ...cur.items];
+      return {
+        ...prev,
+        [productId]: {
+          items,
+          total: cur.total + 1,
+          avg:   items.reduce((s, r) => s + r.rating, 0) / items.length,
+        },
+      };
+    });
+    return created;
+  }, []);
 
-  const getAverageRating = (productId) => {
-    const list = reviews[productId] || [];
-    if (list.length === 0) return 0;
-    return list.reduce((a, b) => a + b.rating, 0) / list.length;
-  };
+  const getReviews       = useCallback((id) => byProduct[id]?.items || [], [byProduct]);
+  const getAverageRating = useCallback((id) => byProduct[id]?.avg || 0, [byProduct]);
+  const getReviewsCount  = useCallback((id) => byProduct[id]?.total ?? (byProduct[id]?.items?.length || 0), [byProduct]);
 
   return (
-    <ReviewsContext.Provider value={{ addReview, getReviews, getAverageRating }}>
+    <ReviewsContext.Provider value={{
+      loadReviews,
+      addReview,
+      getReviews,
+      getAverageRating,
+      getReviewsCount,
+    }}>
       {children}
     </ReviewsContext.Provider>
   );

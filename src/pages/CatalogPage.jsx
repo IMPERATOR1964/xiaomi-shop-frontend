@@ -1,95 +1,109 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import CategoryCard from '../components/CategoryCard';
 import CatalogFilter from '../components/CatalogFilter';
-import {
-  PRODUCTS, CATEGORIES,
-  buildFilterOptions, matchFilters, searchProducts,
-} from '../data/products';
+import { ErrorState, EmptyState, ProductCardSkeleton } from '../components/UiStates';
+import { CATEGORIES, FILTER_CONFIG } from '../data/products';
+import { productsApi } from '../api';
 import '../styles/catalog.css';
+
+const PAGE_SIZE = 24;
 
 export default function CatalogPage() {
   const { category } = useParams();
   const navigate = useNavigate();
   const routerLoc = useLocation();
   const activeCategory = category || 'all';
-  const isMain = activeCategory === 'all'; // главная страница каталога — карточки категорий
+  const isMain = activeCategory === 'all';
 
-  // Поисковый запрос из URL
   const searchQuery = useMemo(() => {
     const params = new URLSearchParams(routerLoc.search);
     return params.get('q') || '';
   }, [routerLoc.search]);
 
-  const [sortBy, setSortBy] = useState('default');
-  const [filters, setFilters] = useState({});
-  const [priceRange, setPriceRange] = useState(null);
+  const activeCat = CATEGORIES.find(c => c.id === activeCategory);
+  const backendCategoryId = activeCat?.backendId || null;
+
+  const [sortBy,     setSortBy]     = useState('newest');
+  const [filters,    setFilters]    = useState({});
+  const [priceRange, setPriceRange] = useState([0, 999999]);
   const [showFilter, setShowFilter] = useState(false);
 
-  // База: товары категории + по поиску
-  const baseProducts = useMemo(() => {
-    let list = isMain ? PRODUCTS : PRODUCTS.filter(p => p.category === activeCategory);
-    list = searchProducts(list, searchQuery);
-    return list;
-  }, [activeCategory, isMain, searchQuery]);
+  const [products, setProducts] = useState([]);
+  const [total,    setTotal]    = useState(0);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState(null);
 
-  const priceMin = useMemo(() => baseProducts.length ? Math.min(...baseProducts.map(p => p.price)) : 0, [baseProducts]);
-  const priceMax = useMemo(() => baseProducts.length ? Math.max(...baseProducts.map(p => p.price)) : 0, [baseProducts]);
+  const buildFilterRequest = useCallback(() => {
+    const stringFilters    = {};
+    const multiValueFilters = {};
+    Object.entries(filters).forEach(([key, set]) => {
+      if (!set || set.size === 0) return;
+      const arr = [...set];
+      if (arr.length === 1) stringFilters[key] = arr[0];
+      else                  multiValueFilters[key] = arr;
+    });
 
-  // Сброс фильтра при смене категории/поиска
+    const req = { sortBy };
+    if (backendCategoryId) req.categoryId = backendCategoryId;
+    if (searchQuery)       req.query = searchQuery;
+    if (priceRange?.[0] > 0)        req.minPrice = priceRange[0];
+    if (priceRange?.[1] < 999999)   req.maxPrice = priceRange[1];
+    if (Object.keys(stringFilters).length)    req.stringFilters = stringFilters;
+    if (Object.keys(multiValueFilters).length) req.multiValueFilters = multiValueFilters;
+    return req;
+  }, [filters, sortBy, priceRange, backendCategoryId, searchQuery]);
+
+  useEffect(() => {
+    if (isMain && !searchQuery) return;
+
+    let alive = true;
+    setLoading(true);
+    setError(null);
+    productsApi
+      .filter(buildFilterRequest(), { page: 0, size: PAGE_SIZE })
+      .then(res => {
+        if (!alive) return;
+        setProducts(res.items);
+        setTotal(res.total);
+      })
+      .catch(err => { if (alive) setError(err?.message || 'Не удалось загрузить товары'); })
+      .finally(() => { if (alive) setLoading(false); });
+
+    return () => { alive = false; };
+  }, [isMain, searchQuery, buildFilterRequest]);
+
   useEffect(() => {
     setFilters({});
-    setPriceRange([priceMin, priceMax]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, searchQuery, priceMin, priceMax]);
-
-  const filterOptions = useMemo(
-    () => isMain ? [] : buildFilterOptions(baseProducts, activeCategory),
-    [baseProducts, activeCategory, isMain]
-  );
-
-  const filtered = useMemo(() => {
-    if (isMain) return baseProducts;
-    const [pmin, pmax] = priceRange || [priceMin, priceMax];
-    return baseProducts.filter(p =>
-      matchFilters(p, filters) &&
-      p.price >= pmin && p.price <= pmax
-    );
-  }, [baseProducts, filters, priceRange, priceMin, priceMax, isMain]);
-
-  const sorted = useMemo(() => {
-    const arr = [...filtered];
-    if (sortBy === 'price-asc') arr.sort((a, b) => a.price - b.price);
-    else if (sortBy === 'price-desc') arr.sort((a, b) => b.price - a.price);
-    else if (sortBy === 'name') arr.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-    return arr;
-  }, [filtered, sortBy]);
+    setPriceRange([0, 999999]);
+  }, [activeCategory, searchQuery]);
 
   const handleCategory = (catId) => {
     if (catId === 'all') navigate('/catalog');
-    else navigate(`/catalog/${catId}`);
-  };
-
-  const getCategoryCount = (catId) => {
-    if (catId === 'all') return PRODUCTS.length;
-    return PRODUCTS.filter(p => p.category === catId).length;
-  };
-
-  const getCategoryFromPrice = (catId) => {
-    const list = PRODUCTS.filter(p => p.category === catId);
-    if (!list.length) return null;
-    return Math.min(...list.map(p => p.price));
+    else                 navigate(`/catalog/${catId}`);
   };
 
   const resetFilters = () => {
     setFilters({});
-    setPriceRange([priceMin, priceMax]);
+    setPriceRange([0, 999999]);
   };
 
-  const activeCat = CATEGORIES.find(c => c.id === activeCategory);
+  const filterOptions = useMemo(() => {
+    if (isMain || !products.length) return [];
+    const conf = FILTER_CONFIG[activeCategory] || [];
+    return conf.map(({ key, label }) => {
+      const values = [...new Set(
+        products.filter(p => p.specs?.[key] != null).map(p => String(p.specs[key]))
+      )].sort((a, b) => a.localeCompare(b, 'ru'));
+      return { key, label, values };
+    }).filter(x => x.values.length > 1);
+  }, [activeCategory, products, isMain]);
 
-  // На главной каталога без поиска — Xiaomi-style карточки категорий
+  const computedPriceMin = products.length ? Math.min(...products.map(p => p.price)) : 0;
+  const computedPriceMax = products.length ? Math.max(...products.map(p => p.price)) : 0;
+
+  // Главная каталога — карточки категорий
   if (isMain && !searchQuery) {
     return (
       <div className="catalog-page">
@@ -99,12 +113,7 @@ export default function CatalogPage() {
 
           <div className="cat-grid">
             {CATEGORIES.filter(c => c.id !== 'all').map(c => (
-              <CategoryCard
-                key={c.id}
-                category={c}
-                count={getCategoryCount(c.id)}
-                fromPrice={getCategoryFromPrice(c.id)}
-              />
+              <CategoryCard key={c.id} category={c} />
             ))}
           </div>
         </div>
@@ -112,7 +121,6 @@ export default function CatalogPage() {
     );
   }
 
-  // Страница категории / результатов поиска
   return (
     <div className="catalog-page">
       <div className="container">
@@ -120,7 +128,6 @@ export default function CatalogPage() {
           {searchQuery ? `Результаты поиска: «${searchQuery}»` : (activeCat?.label || 'Каталог')}
         </h1>
 
-        {/* Чипы категорий */}
         <div className="category-bar">
           {CATEGORIES.map(cat => (
             <button
@@ -130,12 +137,10 @@ export default function CatalogPage() {
             >
               <span>{cat.icon}</span>
               <span>{cat.label}</span>
-              <span className="category-count">{getCategoryCount(cat.id)}</span>
             </button>
           ))}
         </div>
 
-        {/* Body: фильтр слева + товары справа */}
         <div className="catalog-body">
           {!isMain && (
             <>
@@ -150,9 +155,9 @@ export default function CatalogPage() {
                   options={filterOptions}
                   filters={filters}
                   setFilters={setFilters}
-                  priceMin={priceMin}
-                  priceMax={priceMax}
-                  priceRange={priceRange || [priceMin, priceMax]}
+                  priceMin={computedPriceMin}
+                  priceMax={computedPriceMax || 999999}
+                  priceRange={priceRange}
                   setPriceRange={setPriceRange}
                   onReset={resetFilters}
                 />
@@ -162,32 +167,33 @@ export default function CatalogPage() {
 
           <div className="catalog-content">
             <div className="catalog-toolbar">
-              <span className="catalog-count">Найдено: {sorted.length} товаров</span>
+              <span className="catalog-count">
+                {loading ? 'Загружаем...' : `Найдено: ${total} товаров`}
+              </span>
               <div className="catalog-sort">
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                  <option value="default">По умолчанию</option>
-                  <option value="price-asc">Сначала дешёвые</option>
-                  <option value="price-desc">Сначала дорогие</option>
-                  <option value="name">По названию</option>
+                  <option value="newest">Сначала новые</option>
+                  <option value="popular">Популярные</option>
+                  <option value="rating">По рейтингу</option>
+                  <option value="price_asc">Сначала дешёвые</option>
+                  <option value="price_desc">Сначала дорогие</option>
                 </select>
               </div>
             </div>
 
-            {sorted.length === 0 ? (
-              <div className="catalog-empty">
-                <div className="catalog-empty-icon">📦</div>
-                <p>Товары не найдены</p>
-                {(Object.keys(filters).length > 0 || searchQuery) && (
-                  <button className="btn-outline btn-sm" onClick={resetFilters} style={{ marginTop: 16 }}>
-                    Сбросить фильтр
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="products-grid">
-                {sorted.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
-              </div>
-            )}
+            {error
+              ? <ErrorState message={error} onRetry={() => setFilters({ ...filters })} />
+              : loading
+              ? <div className="products-grid"><ProductCardSkeleton count={8} /></div>
+              : products.length === 0
+              ? <EmptyState
+                  icon="📦"
+                  title={searchQuery ? `По запросу «${searchQuery}» ничего не найдено` : 'Товары не найдены'}
+                />
+              : <div className="products-grid">
+                  {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+                </div>
+            }
           </div>
         </div>
       </div>

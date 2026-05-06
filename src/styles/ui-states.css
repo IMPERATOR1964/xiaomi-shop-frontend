@@ -1,0 +1,54 @@
+.ui-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.ui-state-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.ui-state-text {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 460px;
+  line-height: 1.6;
+}
+
+.ui-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: ui-spin 0.7s linear infinite;
+  margin-bottom: 14px;
+}
+
+@keyframes ui-spin {
+  to { transform: rotate(360deg); }
+}
+
+.skeleton-card { pointer-events: none; }
+
+.skeleton-block {
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 0%,
+    var(--bg-hover) 50%,
+    var(--bg-input) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

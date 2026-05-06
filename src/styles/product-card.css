@@ -28,8 +28,17 @@
   transition: transform 0.3s ease;
 }
 
-.product-card:hover .product-card-emoji {
-  transform: scale(1.12);
+.product-card-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 12px;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-card-emoji,
+.product-card:hover .product-card-photo {
+  transform: scale(1.06);
 }
 
 .product-card-badge {

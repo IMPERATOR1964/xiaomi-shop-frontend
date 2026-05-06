@@ -1,37 +1,50 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompare } from '../context/CompareContext';
 import { useCart } from '../context/CartContext';
-import { PRODUCTS, formatPrice, CATEGORIES } from '../data/products';
+import { CATEGORIES, formatPrice } from '../data/products';
+import { productsApi } from '../api';
+import { Loading, EmptyState } from '../components/UiStates';
 import '../styles/compare.css';
 
 export default function ComparePage() {
   const { ids, remove, clear } = useCompare();
   const { addToCart } = useCart();
 
-  const items = ids.map(id => PRODUCTS.find(p => p.id === id)).filter(Boolean);
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
 
-  if (items.length === 0) {
+  useEffect(() => {
+    if (ids.length === 0) { setItems([]); return; }
+    let alive = true;
+    setLoading(true);
+    setError(null);
+
+    Promise.all(ids.map(id => productsApi.byId(id).catch(() => null)))
+      .then(list => { if (alive) setItems(list.filter(Boolean)); })
+      .catch(err => { if (alive) setError(err?.message); })
+      .finally(() => { if (alive) setLoading(false); });
+
+    return () => { alive = false; };
+  }, [ids]);
+
+  if (ids.length === 0) {
     return (
       <div className="compare-page">
         <div className="container">
           <h1 className="section-title">Сравнение товаров</h1>
-          <div className="catalog-empty">
-            <div className="catalog-empty-icon">⚖️</div>
-            <p>Список сравнения пуст. Добавьте товары через карточки.</p>
-            <Link to="/catalog" className="btn-primary" style={{ marginTop: 20 }}>В каталог</Link>
-          </div>
+          <EmptyState icon="⚖️" title="Список сравнения пуст. Добавьте товары через карточки." cta="В каталог" ctaHref="/catalog" />
         </div>
       </div>
     );
   }
 
-  const allKeys = [...new Set(items.flatMap(p => Object.keys(p.specs || {})))];
-  const showOnlyDiff = false; // можно расширить тогглом
-  const filteredKeys = showOnlyDiff
-    ? allKeys.filter(k => new Set(items.map(p => String(p.specs?.[k] ?? '—'))).size > 1)
-    : allKeys;
+  if (loading) {
+    return <div className="compare-page"><div className="container"><Loading label="Загружаем сравнение..." /></div></div>;
+  }
 
-  // Группировка по категории
+  const allKeys = [...new Set(items.flatMap(p => Object.keys(p.specs || {})))];
   const groups = {};
   for (const p of items) (groups[p.category] ||= []).push(p);
 
@@ -42,6 +55,7 @@ export default function ComparePage() {
           <h1 className="section-title" style={{ marginBottom: 0 }}>Сравнение ({items.length})</h1>
           <button className="catalog-filter-reset" onClick={clear}>Очистить всё</button>
         </div>
+        {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
 
         {Object.entries(groups).map(([catId, products]) => (
           <div key={catId} className="compare-group">
@@ -55,7 +69,11 @@ export default function ComparePage() {
                     <th></th>
                     {products.map(p => (
                       <th key={p.id} className="compare-product-cell">
-                        <div className="compare-product-img">{p.image}</div>
+                        <div className="compare-product-img">
+                          {p.imageUrl
+                            ? <img src={p.imageUrl} alt={p.name} style={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain' }} />
+                            : p.image}
+                        </div>
                         <Link to={`/product/${p.id}`} className="compare-product-name">{p.name}</Link>
                         <div className="compare-product-price">{formatPrice(p.price)}</div>
                         <div className="compare-product-actions">
@@ -67,7 +85,7 @@ export default function ComparePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredKeys
+                  {allKeys
                     .filter(k => products.some(p => p.specs?.[k] != null))
                     .map(k => (
                       <tr key={k}>

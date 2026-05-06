@@ -1,15 +1,38 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { PRODUCTS } from '../data/products';
+import { ProductCardSkeleton } from '../components/UiStates';
+import { productsApi } from '../api';
 import '../styles/home.css';
 
 export default function HomePage() {
-  const popular = PRODUCTS.filter(p => p.badge === 'hit' || p.badge === 'new').slice(0, 4);
-  const onSale = PRODUCTS.filter(p => p.badge === 'sale');
+  const [popular, setPopular] = useState([]);
+  const [newest,  setNewest]  = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      productsApi.filter({ sortBy: 'popular' }, { size: 4 }),
+      productsApi.filter({ sortBy: 'newest'  }, { size: 4 }),
+    ])
+      .then(([pop, nw]) => {
+        if (!alive) return;
+        setPopular(pop.items);
+        setNewest(nw.items);
+      })
+      .catch(err => { if (alive) setError(err?.message || 'Не удалось загрузить'); })
+      .finally(() => { if (alive) setLoading(false); });
+
+    return () => { alive = false; };
+  }, []);
 
   return (
     <>
-      {/* Hero */}
       <section className="hero">
         <div className="container hero-inner">
           <div className="hero-content">
@@ -35,26 +58,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Popular */}
       <section className="container" style={{ paddingBottom: '48px' }}>
         <div className="section-header">
           <h2 className="section-title">Популярные товары</h2>
           <Link to="/catalog" className="section-link">Смотреть все →</Link>
         </div>
         <div className="products-grid">
-          {popular.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+          {loading
+            ? <ProductCardSkeleton count={4} />
+            : popular.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
+          }
         </div>
       </section>
 
-      {/* On sale */}
       <section className="container" style={{ paddingBottom: '48px' }}>
         <div className="section-header">
-          <h2 className="section-title">🔥 Скидки</h2>
-          <Link to="/catalog" className="section-link">Все акции →</Link>
+          <h2 className="section-title">✨ Новинки</h2>
+          <Link to="/catalog" className="section-link">Все товары →</Link>
         </div>
         <div className="products-grid">
-          {onSale.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+          {loading
+            ? <ProductCardSkeleton count={4} />
+            : newest.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
+          }
         </div>
+        {error && !loading && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>{error}</p>}
       </section>
     </>
   );
