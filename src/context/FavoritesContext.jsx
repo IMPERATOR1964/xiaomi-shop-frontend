@@ -5,6 +5,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import { wishlistApi, ApiError } from '../api';
 
 const FavoritesContext = createContext();
@@ -18,6 +19,7 @@ const writeLocal = (ids) => localStorage.setItem(STORAGE_KEY, JSON.stringify(ids
 
 export function FavoritesProvider({ children }) {
   const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [ids, setIds] = useState(readLocal);
   const [loading, setLoading] = useState(false);
 
@@ -57,6 +59,9 @@ export function FavoritesProvider({ children }) {
     const has = ids.includes(id);
     const next = has ? ids.filter(x => x !== id) : [...ids, id];
     persist(next);
+    if (has) toast?.info?.('Удалено из избранного');
+    else     toast?.success?.('Добавлено в избранное');
+
     if (!isAuthenticated) return;
 
     try {
@@ -66,9 +71,10 @@ export function FavoritesProvider({ children }) {
       persist(ids);
       if (!(err instanceof ApiError && err.status === 409)) {
         console.error('wishlist error', err);
+        toast?.error?.('Не удалось обновить избранное');
       }
     }
-  }, [ids, isAuthenticated, persist]);
+  }, [ids, isAuthenticated, persist, toast]);
 
   const has = useCallback((id) => ids.includes(id), [ids]);
 

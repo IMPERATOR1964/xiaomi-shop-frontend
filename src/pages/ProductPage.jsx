@@ -8,8 +8,10 @@ import { productsApi } from '../api';
 import ProductVariants from '../components/ProductVariants';
 import ShareButton from '../components/ShareButton';
 import SimilarProducts from '../components/SimilarProducts';
+import RecentlyViewed from '../components/RecentlyViewed';
 import ProductReviews, { StarRating } from '../components/ProductReviews';
 import { Loading } from '../components/UiStates';
+import { useHistory } from '../context/HistoryContext';
 import '../styles/product.css';
 
 export default function ProductPage() {
@@ -18,6 +20,7 @@ export default function ProductPage() {
   const { addToCart } = useCart();
   const { has: isFav, toggle: toggleFav } = useFavorites();
   const { has: isCmp, toggle: toggleCmp } = useCompare();
+  const { track } = useHistory();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,11 +32,15 @@ export default function ProductPage() {
     setLoading(true);
     setError(null);
     productsApi.byId(id)
-      .then(p => { if (alive) setProduct(p); })
+      .then(p => {
+        if (!alive) return;
+        setProduct(p);
+        if (p?.id != null) track(p.id); // запоминаем просмотр
+      })
       .catch(err => { if (alive) setError(err?.message || 'Товар не найден'); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [id]);
+  }, [id, track]);
 
   if (loading) {
     return <div className="container" style={{ padding: '32px 0' }}><Loading label="Загружаем товар..." /></div>;
@@ -194,6 +201,8 @@ export default function ProductPage() {
         </section>
 
         <SimilarProducts productId={product.id} />
+
+        <RecentlyViewed excludeId={product.id} />
       </div>
     </div>
   );

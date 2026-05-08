@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { formatPrice } from '../data/products';
 import { ordersApi, ApiError } from '../api';
+import { lastAddressStore } from '../utils/lastAddress';
 import '../styles/auth.css';
 import '../styles/cart.css';
 
@@ -11,16 +13,36 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, cartTotal, cartCount, clearCart } = useCart();
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const [deliveryAddress, setAddress] = useState('');
   const [contactPhone, setPhone]      = useState('');
   const [customerNotes, setNotes]     = useState('');
   const [error, setError] = useState('');
   const [busy,  setBusy]  = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) navigate('/login');
   }, [isAuthenticated, navigate]);
+
+  // При первом открытии — подтягиваем последний адрес из адресной книги.
+  useEffect(() => {
+    const saved = lastAddressStore.get();
+    if (saved?.deliveryAddress) {
+      setHasSaved(true);
+      setAddress(saved.deliveryAddress);
+      setPhone(saved.contactPhone || '');
+      setNotes(saved.customerNotes || '');
+    }
+  }, []);
+
+  const clearSaved = () => {
+    lastAddressStore.clear();
+    setAddress(''); setPhone(''); setNotes('');
+    setHasSaved(false);
+    toast.info('Сохранённый адрес удалён');
+  };
 
   if (!isAuthenticated) return null;
   if (cart.length === 0) {
@@ -51,7 +73,14 @@ export default function CheckoutPage() {
         contactPhone:    digits,
         customerNotes:   customerNotes.trim() || undefined,
       });
+      // Сохраняем адрес для следующего раза
+      lastAddressStore.set({
+        deliveryAddress: deliveryAddress.trim(),
+        contactPhone:    digits,
+        customerNotes:   customerNotes.trim(),
+      });
       await clearCart();
+      toast.success(`Заказ #${order.id} оформлен`);
       navigate(`/orders/${order.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -76,6 +105,26 @@ export default function CheckoutPage() {
         <div className="cart-layout">
           <form className="cart-items" onSubmit={submit} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 14, padding: 24 }}>
             {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
+            {hasSaved && (
+              <div style={{
+                background: 'var(--accent-light)',
+                color: 'var(--accent)',
+                padding: '10px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}>
+                <span>📍 Подставлен адрес из прошлого заказа</span>
+                <button type="button" onClick={clearSaved} style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 13 }}>
+                  Очистить
+                </button>
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">Получатель</label>

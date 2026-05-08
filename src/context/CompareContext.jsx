@@ -1,9 +1,11 @@
 import { createContext, useContext, useState } from 'react';
+import { useToast } from './ToastContext';
 
 const CompareContext = createContext();
 const MAX_COMPARE = 4;
 
 export function CompareProvider({ children }) {
+  const { toast } = useToast();
   const [ids, setIds] = useState(() => {
     try {
       const raw = localStorage.getItem('voltix-compare');
@@ -19,12 +21,14 @@ export function CompareProvider({ children }) {
   const toggle = (id) => {
     if (ids.includes(id)) {
       persist(ids.filter(x => x !== id));
+      toast?.info?.('Удалено из сравнения');
     } else {
       if (ids.length >= MAX_COMPARE) {
-        alert(`Максимум ${MAX_COMPARE} товара в сравнении`);
+        toast?.error?.(`Максимум ${MAX_COMPARE} товара в сравнении`);
         return;
       }
       persist([...ids, id]);
+      toast?.success?.('Добавлено в сравнение');
     }
   };
 

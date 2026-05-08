@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import CookieNotice from './components/CookieNotice';
+import ToastContainer from './components/ToastContainer';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ProductPage from './pages/ProductPage';
@@ -61,6 +63,8 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
+      <CookieNotice />
+      <ToastContainer />
     </div>
   );
 }

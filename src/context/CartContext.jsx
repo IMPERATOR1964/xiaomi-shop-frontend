@@ -5,6 +5,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import { cartApi, ApiError } from '../api';
 
 const CartContext = createContext();
@@ -18,6 +19,7 @@ const writeLocal = (items) => localStorage.setItem(STORAGE_KEY, JSON.stringify(i
 
 export function CartProvider({ children }) {
   const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [cart, setCart]   = useState(readLocal);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -87,16 +89,21 @@ export function CartProvider({ children }) {
           shortDesc: product.shortDesc,
         }];
       });
+      toast?.success?.('Товар добавлен в корзину');
       return;
     }
     try {
       const res = await cartApi.addItem(product.id, qty);
       setCart(res.items);
+      toast?.success?.('Товар добавлен в корзину');
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
+      if (err instanceof ApiError) {
+        setError(err.message);
+        toast?.error?.(err.message);
+      }
       throw err;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, toast]);
 
   const updateQty = useCallback(async (id, qty) => {
     if (qty <= 0) return removeFromCart(id);

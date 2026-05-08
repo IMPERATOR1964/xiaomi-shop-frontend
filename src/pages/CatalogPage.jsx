@@ -25,10 +25,25 @@ export default function CatalogPage() {
   const activeCat = CATEGORIES.find(c => c.id === activeCategory);
   const backendCategoryId = activeCat?.backendId || null;
 
-  const [sortBy,     setSortBy]     = useState('newest');
+  // Запоминаем сортировку per-категория в localStorage.
+  const sortKey = `voltix-sort-${activeCategory}`;
+  const [sortBy, setSortBy] = useState(() => {
+    return localStorage.getItem(sortKey) || 'newest';
+  });
   const [filters,    setFilters]    = useState({});
   const [priceRange, setPriceRange] = useState([0, 999999]);
   const [showFilter, setShowFilter] = useState(false);
+
+  // При смене категории — подтягиваем сохранённую сортировку.
+  useEffect(() => {
+    const saved = localStorage.getItem(`voltix-sort-${activeCategory}`);
+    setSortBy(saved || 'newest');
+  }, [activeCategory]);
+
+  // При изменении сортировки — сохраняем.
+  useEffect(() => {
+    localStorage.setItem(sortKey, sortBy);
+  }, [sortBy, sortKey]);
 
   const [products, setProducts] = useState([]);
   const [total,    setTotal]    = useState(0);

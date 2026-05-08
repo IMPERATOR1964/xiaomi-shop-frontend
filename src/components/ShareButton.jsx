@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useToast } from '../context/ToastContext';
 
 export default function ShareButton({ product }) {
+  const { toast } = useToast();
   const [shared, setShared] = useState(false);
 
   const onClick = async () => {
@@ -17,13 +19,13 @@ export default function ShareButton({ product }) {
         return;
       }
     } catch (e) {
-      // пользователь отменил — игнорируем
       if (e?.name === 'AbortError') return;
     }
 
     try {
       await navigator.clipboard.writeText(url);
       setShared(true);
+      toast?.success?.('Ссылка скопирована');
       setTimeout(() => setShared(false), 1800);
     } catch {
       prompt('Скопируйте ссылку:', url);
