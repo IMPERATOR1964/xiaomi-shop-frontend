@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import CategoryIcon from './CategoryIcon';
 
 export default function CategoryCard({ category, count, fromPrice }) {
   return (
@@ -18,7 +19,9 @@ export default function CategoryCard({ category, count, fromPrice }) {
           </svg>
         </span>
       </div>
-      <div className="cat-card-icon">{category.icon}</div>
+      <div className="cat-card-icon">
+        <CategoryIcon category={category.id} size={64} />
+      </div>
       {count != null && <span className="cat-card-count">{count}</span>}
     </Link>
   );

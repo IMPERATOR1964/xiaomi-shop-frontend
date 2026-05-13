@@ -119,7 +119,7 @@ export default function CheckoutPage() {
                 gap: 12,
                 flexWrap: 'wrap',
               }}>
-                <span>📍 Подставлен адрес из прошлого заказа</span>
+                <span>Подставлен адрес из прошлого заказа</span>
                 <button type="button" onClick={clearSaved} style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 13 }}>
                   Очистить
                 </button>

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCompare } from '../context/CompareContext';
+import CategoryIcon from './CategoryIcon';
 import { formatPrice } from '../data/products';
 import '../styles/product-card.css';
 
@@ -51,7 +52,7 @@ export default function ProductCard({ product, index = 0 }) {
         </div>
         {product.imageUrl
           ? <img src={product.imageUrl} alt={product.name} loading="lazy" className="product-card-photo" />
-          : <span className="product-card-emoji">{product.image}</span>
+          : <CategoryIcon category={product.category} size={64} className="product-card-svg" />
         }
       </Link>
 

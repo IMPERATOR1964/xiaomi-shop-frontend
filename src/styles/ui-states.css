@@ -10,7 +10,11 @@
 .ui-state-icon {
   font-size: 56px;
   margin-bottom: 16px;
-  opacity: 0.6;
+  opacity: 0.55;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ui-state-text {

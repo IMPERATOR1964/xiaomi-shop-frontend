@@ -238,20 +238,10 @@
   line-height: 1;
 }
 
-/* Тема */
-.theme-toggle {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: all 0.2s;
-  background: transparent;
-}
+/* Тема — наследует .header-btn, доп. правила не нужны */
+.theme-toggle { /* legacy hook, оставлен для совместимости */ }
 
-.theme-toggle:hover { background: var(--bg-hover); }
+.header-btn-admin { color: var(--accent); }
 
 /* Мобильная кнопка */
 .mobile-menu-btn {

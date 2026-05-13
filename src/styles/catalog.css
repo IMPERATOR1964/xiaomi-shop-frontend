@@ -88,10 +88,10 @@
 .cat-card:hover .cat-card-link { gap: 10px; }
 
 .cat-card-icon {
-  font-size: 64px;
   z-index: 1;
+  color: var(--accent);
   transition: transform 0.3s;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.10));
 }
 
 .cat-card:hover .cat-card-icon { transform: scale(1.1) rotate(-6deg); }
@@ -312,6 +312,47 @@
   padding: 4px 0;
 }
 .catalog-filter-more:hover { text-decoration: underline; }
+
+/* Бейдж выбранных значений в заголовке секции */
+.catalog-filter-section-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  margin-left: 8px;
+  border-radius: 100px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Кнопка "Все фильтры" — раскрытие второстепенных */
+.catalog-filter-show-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+
+.catalog-filter-show-all:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 /* ===========================
    ТУЛБАР, EMPTY

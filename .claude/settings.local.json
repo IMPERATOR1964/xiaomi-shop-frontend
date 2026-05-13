@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Read(//c/Users/safik/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/e7136d70-3dd6-4239-bbb4-5a7d1e705e11/8037f949-9584-402d-876f-c08642edd509/skills/docx/**)",
+      "Bash(python -m pip install --quiet pandoc)",
+      "Bash(where pandoc *)"
     ]
   }
 }

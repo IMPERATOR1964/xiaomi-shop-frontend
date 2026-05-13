@@ -23,6 +23,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminProductFormPage from './pages/admin/AdminProductFormPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import './styles/global.css';
 import './styles/reviews.css';
 import './styles/ui-states.css';
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="products"        element={<AdminProductsPage />} />
             <Route path="products/new"    element={<AdminProductFormPage />} />
             <Route path="products/:id"    element={<AdminProductFormPage />} />
+            <Route path="orders"          element={<AdminOrdersPage />} />
             <Route path="categories"      element={<AdminCategoriesPage />} />
           </Route>
         </Routes>

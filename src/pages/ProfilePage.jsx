@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCompare } from '../context/CompareContext';
 import { useCart } from '../context/CartContext';
+import { useToast } from '../context/ToastContext';
 import '../styles/auth.css';
 
 export default function ProfilePage() {
@@ -11,10 +12,12 @@ export default function ProfilePage() {
   const { count: favCount } = useFavorites();
   const { count: cmpCount } = useCompare();
   const { cartCount } = useCart();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState('');
+  const fileRef = useRef(null);
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -29,14 +32,11 @@ export default function ProfilePage() {
 
   const saveEdit = () => {
     const trimmed = draftName.trim();
-    if (trimmed && trimmed !== user.name) {
-      updateUser({ name: trimmed });
-    }
+    if (trimmed && trimmed !== user.name) updateUser({ name: trimmed });
     setEditing(false);
   };
 
   const cancelEdit = () => setEditing(false);
-
   const handleKey = (e) => {
     if (e.key === 'Enter')  saveEdit();
     if (e.key === 'Escape') cancelEdit();
@@ -47,6 +47,37 @@ export default function ProfilePage() {
     navigate('/');
   };
 
+  // ===== Аватар =====
+  const pickAvatar = () => fileRef.current?.click();
+
+  const onAvatarSelected = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 400 * 1024) {
+      toast?.error?.('Выберите файл меньше 400 КБ');
+      e.target.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast?.error?.('Нужно изображение');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateUser({ avatarUrl: reader.result });
+      toast?.success?.('Фото обновлено');
+    };
+    reader.onerror = () => toast?.error?.('Не удалось загрузить фото');
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const removeAvatar = () => {
+    updateUser({ avatarUrl: null });
+    toast?.info?.('Фото удалено');
+  };
+
   const Badge = ({ n }) =>
     n > 0 ? <span style={{ marginLeft: 'auto', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 100 }}>{n}</span> : null;
 
@@ -54,9 +85,36 @@ export default function ProfilePage() {
     <div className="profile-page">
       <div className="container">
         <div className="profile-card">
-          <div className="profile-avatar">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={onAvatarSelected}
+            style={{ display: 'none' }}
+          />
+
+          <button
+            type="button"
+            className="profile-avatar profile-avatar-btn"
+            onClick={pickAvatar}
+            title="Загрузить фото"
+          >
+            {user.avatarUrl
+              ? <img src={user.avatarUrl} alt={user.name} />
+              : user.name.charAt(0).toUpperCase()
+            }
+            <span className="profile-avatar-overlay">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </span>
+          </button>
+          {user.avatarUrl && (
+            <button type="button" className="profile-avatar-remove" onClick={removeAvatar}>
+              Удалить фото
+            </button>
+          )}
 
           {editing ? (
             <div className="profile-name-edit">
@@ -99,28 +157,27 @@ export default function ProfilePage() {
 
           <div className="profile-menu">
             <button className="profile-menu-item" onClick={() => navigate('/cart')}>
-              🛒 Корзина <Badge n={cartCount} />
+              Корзина <Badge n={cartCount} />
             </button>
             <button className="profile-menu-item" onClick={() => navigate('/orders')}>
-              📦 Мои заказы
+              Мои заказы
             </button>
             <button className="profile-menu-item" onClick={() => navigate('/favorites')}>
-              ❤️ Избранное <Badge n={favCount} />
+              Избранное <Badge n={favCount} />
             </button>
             <button className="profile-menu-item" onClick={() => navigate('/compare')}>
-              ⚖️ Сравнение <Badge n={cmpCount} />
+              Сравнение <Badge n={cmpCount} />
             </button>
             {isStaff && (
               <button
-                className="profile-menu-item"
+                className="profile-menu-item profile-menu-item-admin"
                 onClick={() => navigate('/admin')}
-                style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
               >
-                ⚙️ {isAdmin ? 'Админ-панель' : 'Панель модератора'}
+                {isAdmin ? 'Админ-панель' : 'Панель модератора'}
               </button>
             )}
             <button className="profile-menu-item danger" onClick={handleLogout}>
-              🚪 Выйти из аккаунта
+              Выйти из аккаунта
             </button>
           </div>
         </div>

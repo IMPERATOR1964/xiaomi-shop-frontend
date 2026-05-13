@@ -56,7 +56,7 @@ export default function FavoritesPage() {
         {loading
           ? <div className="products-grid"><ProductCardSkeleton count={6} /></div>
           : items.length === 0
-          ? <EmptyState icon="💔" title="В избранном пока ничего нет" cta="Перейти в каталог" ctaHref="/catalog" />
+          ? <EmptyState title="В избранном пока ничего нет" cta="Перейти в каталог" ctaHref="/catalog" />
           : <div className="products-grid">
               {items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>

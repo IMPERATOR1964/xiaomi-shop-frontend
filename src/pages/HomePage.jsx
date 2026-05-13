@@ -127,7 +127,7 @@ export default function HomePage() {
       {(recs.loading || recs.items.length > 0) && (
         <section className="container" style={{ paddingBottom: '48px' }}>
           <div className="section-header">
-            <h2 className="section-title">🎯 Рекомендуем вам</h2>
+            <h2 className="section-title">Рекомендуем вам</h2>
             {recs.seedCategory && (
               <span className="section-link" style={{ color: 'var(--text-muted)' }}>
                 на основе ваших интересов
@@ -145,7 +145,7 @@ export default function HomePage() {
 
       {/* Недавно смотрели */}
       <div className="container">
-        <RecentlyViewed title="👀 Вы недавно смотрели" count={4} />
+        <RecentlyViewed title="Вы недавно смотрели" count={4} />
       </div>
 
       <section className="container" style={{ paddingBottom: '48px' }}>
@@ -163,7 +163,7 @@ export default function HomePage() {
 
       <section className="container" style={{ paddingBottom: '48px' }}>
         <div className="section-header">
-          <h2 className="section-title">✨ Новинки</h2>
+          <h2 className="section-title">Новинки</h2>
           <Link to="/catalog" className="section-link">Все товары →</Link>
         </div>
         <div className="products-grid">

@@ -53,7 +53,7 @@ export default function OrdersPage() {
           : error
           ? <p style={{ color: 'var(--danger)' }}>{error}</p>
           : orders.length === 0
-          ? <EmptyState icon="📦" title="У вас ещё нет заказов" cta="В каталог" ctaHref="/catalog" />
+          ? <EmptyState title="У вас ещё нет заказов" cta="В каталог" ctaHref="/catalog" />
           : <div className="orders-list">
               {orders.map(o => {
                 const st = STATUS_LABEL[o.status] || { text: o.status, cls: '' };

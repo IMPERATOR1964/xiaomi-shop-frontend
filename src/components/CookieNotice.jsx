@@ -27,7 +27,6 @@ export default function CookieNotice() {
 
   return (
     <div className="cookie-notice" role="status">
-      <span className="cookie-notice-icon">🍪</span>
       <p className="cookie-notice-text">
         Сайт использует технические cookies и session storage — они нужны для авторизации,
         сохранения сессии, работы корзины и корректной работы интерфейса.

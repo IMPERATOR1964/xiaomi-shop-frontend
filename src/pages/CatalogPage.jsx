@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import CategoryCard from '../components/CategoryCard';
+import CategoryIcon from '../components/CategoryIcon';
 import CatalogFilter from '../components/CatalogFilter';
 import { ErrorState, EmptyState, ProductCardSkeleton } from '../components/UiStates';
 import { CATEGORIES, FILTER_CONFIG } from '../data/products';
@@ -107,11 +108,11 @@ export default function CatalogPage() {
   const filterOptions = useMemo(() => {
     if (isMain || !products.length) return [];
     const conf = FILTER_CONFIG[activeCategory] || [];
-    return conf.map(({ key, label }) => {
+    return conf.map(({ key, label, primary }) => {
       const values = [...new Set(
         products.filter(p => p.specs?.[key] != null).map(p => String(p.specs[key]))
       )].sort((a, b) => a.localeCompare(b, 'ru'));
-      return { key, label, values };
+      return { key, label, primary: primary !== false, values };
     }).filter(x => x.values.length > 1);
   }, [activeCategory, products, isMain]);
 
@@ -150,7 +151,7 @@ export default function CatalogPage() {
               className={`category-chip ${activeCategory === cat.id ? 'active' : ''}`}
               onClick={() => handleCategory(cat.id)}
             >
-              <span>{cat.icon}</span>
+              <CategoryIcon category={cat.id} size={16} />
               <span>{cat.label}</span>
             </button>
           ))}
@@ -202,7 +203,6 @@ export default function CatalogPage() {
               ? <div className="products-grid"><ProductCardSkeleton count={8} /></div>
               : products.length === 0
               ? <EmptyState
-                  icon="📦"
                   title={searchQuery ? `По запросу «${searchQuery}» ничего не найдено` : 'Товары не найдены'}
                 />
               : <div className="products-grid">

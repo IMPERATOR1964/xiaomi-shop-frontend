@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { CATEGORIES, formatPrice } from '../data/products';
 import { productsApi } from '../api';
 import { Loading, EmptyState } from '../components/UiStates';
+import CategoryIcon from '../components/CategoryIcon';
 import '../styles/compare.css';
 
 export default function ComparePage() {
@@ -34,7 +35,7 @@ export default function ComparePage() {
       <div className="compare-page">
         <div className="container">
           <h1 className="section-title">Сравнение товаров</h1>
-          <EmptyState icon="⚖️" title="Список сравнения пуст. Добавьте товары через карточки." cta="В каталог" ctaHref="/catalog" />
+          <EmptyState title="Список сравнения пуст. Добавьте товары через карточки." cta="В каталог" ctaHref="/catalog" />
         </div>
       </div>
     );
@@ -72,7 +73,8 @@ export default function ComparePage() {
                         <div className="compare-product-img">
                           {p.imageUrl
                             ? <img src={p.imageUrl} alt={p.name} style={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain' }} />
-                            : p.image}
+                            : <CategoryIcon category={p.category} size={56} />
+                          }
                         </div>
                         <Link to={`/product/${p.id}`} className="compare-product-name">{p.name}</Link>
                         <div className="compare-product-price">{formatPrice(p.price)}</div>

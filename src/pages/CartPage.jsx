@@ -1,14 +1,20 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { formatPrice } from '../data/products';
+import { formatPrice, CATEGORIES } from '../data/products';
 import { Loading, EmptyState } from '../components/UiStates';
+import CategoryIcon from '../components/CategoryIcon';
 import '../styles/cart.css';
 
 export default function CartPage() {
-  const { cart, updateQty, removeFromCart, cartTotal, cartCount, loading, error } = useCart();
+  const { cart, updateQty, removeFromCart, cartTotal, cartCount, clearCart, loading, error } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  const handleClear = async () => {
+    if (!confirm('Очистить корзину полностью?')) return;
+    await clearCart();
+  };
 
   if (loading) {
     return <div className="cart-page"><div className="container"><Loading label="Загружаем корзину..." /></div></div>;
@@ -19,7 +25,7 @@ export default function CartPage() {
       <div className="cart-page">
         <div className="container">
           <h1 className="section-title">Корзина</h1>
-          <EmptyState icon="🛒" title="Корзина пуста — добавьте товары из каталога" cta="Перейти в каталог" ctaHref="/catalog" />
+          <EmptyState title="Корзина пуста — добавьте товары из каталога" cta="Перейти в каталог" ctaHref="/catalog" />
         </div>
       </div>
     );
@@ -36,7 +42,17 @@ export default function CartPage() {
   return (
     <div className="cart-page">
       <div className="container">
-        <h1 className="section-title">Корзина ({cartCount})</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+          <h1 className="section-title" style={{ marginBottom: 0 }}>Корзина ({cartCount})</h1>
+          <button
+            type="button"
+            className="catalog-filter-reset"
+            onClick={handleClear}
+            style={{ fontSize: 13, color: 'var(--danger)' }}
+          >
+            Очистить корзину
+          </button>
+        </div>
         {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
 
         <div className="cart-layout">
@@ -46,7 +62,8 @@ export default function CartPage() {
                 <div className="cart-item-image">
                   {item.imageUrl
                     ? <img src={item.imageUrl} alt={item.name} className="cart-item-photo" />
-                    : (item.image || '⚡')}
+                    : <CategoryIcon category={item.category} size={36} />
+                  }
                 </div>
                 <div className="cart-item-info">
                   <Link to={`/product/${item.id}`} className="cart-item-name">{item.name}</Link>

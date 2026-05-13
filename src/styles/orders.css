@@ -137,6 +137,21 @@
   white-space: nowrap;
 }
 
+.order-admin-block {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+.order-admin-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
 @media (max-width: 768px) {
   .order-detail-grid { grid-template-columns: 1fr; }
   .order-detail-item { grid-template-columns: 1fr 1fr; }

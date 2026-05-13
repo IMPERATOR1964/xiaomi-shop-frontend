@@ -166,15 +166,20 @@
 }
 
 .admin-stat-icon {
-  font-size: 32px;
   width: 52px;
   height: 52px;
   border-radius: 12px;
   background: var(--accent-light);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+.admin-stat-icon svg {
+  width: 26px;
+  height: 26px;
 }
 
 .admin-stat-info { min-width: 0; }

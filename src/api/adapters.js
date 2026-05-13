@@ -2,15 +2,18 @@
 
 import { categorySlugByBackendId, categorySlugByBackendName } from '../data/products';
 
+// Иконка-fallback оставлена только для совместимости со старым кодом,
+// где image использовался как текст. Реально для рендера используется
+// компонент CategoryIcon (см. components/CategoryIcon.jsx).
 const ICON_BY_CAT = {
-  smartphones: '📱',
-  cases:       '🛡️',
-  chargers:    '🔌',
-  powerbanks:  '🔋',
-  earphones:   '🎧',
-  glass:       '🔲',
-  watches:     '⌚',
-  tablets:     '📱',
+  smartphones: '',
+  cases:       '',
+  chargers:    '',
+  powerbanks:  '',
+  earphones:   '',
+  glass:       '',
+  watches:     '',
+  tablets:     '',
 };
 
 const makeShort = (desc) => {

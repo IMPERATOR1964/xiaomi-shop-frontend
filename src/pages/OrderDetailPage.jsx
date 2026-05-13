@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { ordersApi, ApiError } from '../api';
 import { formatPrice } from '../data/products';
 import { Loading } from '../components/UiStates';
 import '../styles/orders.css';
+
+// Возможные следующие статусы для смены админом
+const ADMIN_TRANSITIONS = {
+  PENDING:   ['PAID', 'CANCELLED'],
+  PAID:      ['SHIPPED', 'CANCELLED'],
+  SHIPPED:   ['DELIVERED'],
+  DELIVERED: [],
+  CANCELLED: [],
+};
 
 const STATUS_LABEL = {
   PENDING:   { text: 'Ожидает оплаты', cls: 'pending' },
@@ -22,12 +32,15 @@ const formatDate = (iso) => {
 export default function OrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isStaff } = useAuth();
+  const { toast } = useToast();
 
   const [order, setOrder]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  const [newStatus, setNewStatus] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -50,11 +63,28 @@ export default function OrderDetailPage() {
     try {
       const updated = await ordersApi.cancel(order.id);
       setOrder(updated);
+      toast?.success?.('Заказ отменён');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Не удалось отменить';
-      alert(msg);
+      toast?.error?.(msg);
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const applyStatus = async () => {
+    if (!order || !newStatus) return;
+    setUpdatingStatus(true);
+    try {
+      const updated = await ordersApi.updateStatus(order.id, newStatus);
+      setOrder(updated);
+      setNewStatus('');
+      toast?.success?.(`Статус изменён на ${newStatus}`);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Не удалось обновить статус';
+      toast?.error?.(msg);
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -74,6 +104,7 @@ export default function OrderDetailPage() {
 
   const st = STATUS_LABEL[order.status] || { text: order.status, cls: '' };
   const canCancel = order.status === 'PENDING';
+  const adminNextStatuses = isStaff ? (ADMIN_TRANSITIONS[order.status] || []) : [];
 
   return (
     <div className="orders-page">
@@ -114,7 +145,35 @@ export default function OrderDetailPage() {
                 {cancelling ? 'Отменяем…' : 'Отменить заказ'}
               </button>
             )}
-            <Link to="/orders" className="btn-outline btn-sm" style={{ marginTop: 8, width: '100%', textAlign: 'center' }}>← Все заказы</Link>
+            <Link to="/orders" className="btn-outline btn-sm" style={{ marginTop: 8, width: '100%', textAlign: 'center' }}>Все заказы</Link>
+
+            {isStaff && adminNextStatuses.length > 0 && (
+              <div className="order-admin-block">
+                <div className="order-admin-title">Действия администратора</div>
+                <select
+                  className="form-input"
+                  value={newStatus}
+                  onChange={e => setNewStatus(e.target.value)}
+                  style={{ marginBottom: 8 }}
+                >
+                  <option value="">Сменить статус...</option>
+                  {adminNextStatuses.map(s => (
+                    <option key={s} value={s}>
+                      {STATUS_LABEL[s]?.text || s}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn-primary btn-sm"
+                  disabled={!newStatus || updatingStatus}
+                  onClick={applyStatus}
+                  style={{ width: '100%' }}
+                >
+                  {updatingStatus ? 'Сохраняем…' : 'Применить'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

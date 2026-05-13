@@ -10,6 +10,7 @@ import ShareButton from '../components/ShareButton';
 import SimilarProducts from '../components/SimilarProducts';
 import RecentlyViewed from '../components/RecentlyViewed';
 import ProductReviews, { StarRating } from '../components/ProductReviews';
+import CategoryIcon from '../components/CategoryIcon';
 import { Loading } from '../components/UiStates';
 import { useHistory } from '../context/HistoryContext';
 import '../styles/product.css';
@@ -85,7 +86,7 @@ export default function ProductPage() {
           <div className="product-detail-image">
             {product.imageUrl
               ? <img src={product.imageUrl} alt={product.name} className="product-detail-photo" />
-              : product.image
+              : <CategoryIcon category={product.category} size={140} className="product-detail-svg" />
             }
           </div>
 
@@ -159,21 +160,37 @@ export default function ProductPage() {
 
             <div className="product-features">
               <div className="product-feature">
-                <span className="product-feature-icon">🚚</span>
+                <span className="product-feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="1" y="3" width="15" height="13"/>
+                    <path d="M16 8h4l3 3v5h-7z"/>
+                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                  </svg>
+                </span>
                 <div>
                   <b>Бесплатная доставка</b>
                   <small>от 1 дня по РФ</small>
                 </div>
               </div>
               <div className="product-feature">
-                <span className="product-feature-icon">🛡️</span>
+                <span className="product-feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/>
+                  </svg>
+                </span>
                 <div>
                   <b>Гарантия 12 мес.</b>
                   <small>Официальный сервис</small>
                 </div>
               </div>
               <div className="product-feature">
-                <span className="product-feature-icon">↩️</span>
+                <span className="product-feature-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                  </svg>
+                </span>
                 <div>
                   <b>Возврат 14 дней</b>
                 </div>

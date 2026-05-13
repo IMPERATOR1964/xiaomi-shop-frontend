@@ -36,6 +36,18 @@
   transition: transform 0.3s ease;
 }
 
+.product-card-svg {
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.product-card:hover .product-card-svg {
+  opacity: 1;
+  color: var(--accent);
+  transform: scale(1.06);
+}
+
 .product-card:hover .product-card-emoji,
 .product-card:hover .product-card-photo {
   transform: scale(1.06);
