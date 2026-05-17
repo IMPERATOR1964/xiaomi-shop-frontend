@@ -25,6 +25,8 @@ export function AuthProvider({ children }) {
     setUser(u);
   };
 
+  // Возвращает полный AuthResponse — RegisterPage берёт оттуда verificationRequiredUntil
+  // и verificationCodeValidUntil, чтобы передать дедлайны на /verify-email.
   const register = useCallback(async ({ username, email, password, name }) => {
     const res = await authApi.register({ username, email, password });
     const profile = {
@@ -34,7 +36,7 @@ export function AuthProvider({ children }) {
     };
     persistUser(profile);
     setTokenVer(v => v + 1);
-    return profile;
+    return res;
   }, []);
 
   const login = useCallback(async ({ username, password }) => {
@@ -64,10 +66,11 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  const verifyEmail        = (token) => authApi.verifyEmail(token);
-  const resendVerification = (email) => authApi.resendVerification(email);
-  const forgotPassword     = (email) => authApi.forgotPassword(email);
-  const resetPassword      = ({ token, newPassword }) => authApi.resetPassword({ token, newPassword });
+  const verifyEmail        = ({ email, code })               => authApi.verifyEmail({ email, code });
+  const resendVerification = (email)                          => authApi.resendVerification(email);
+  const verificationStatus = (email)                          => authApi.verificationStatus(email);
+  const forgotPassword     = (email)                          => authApi.forgotPassword(email);
+  const resetPassword      = ({ email, code, newPassword })   => authApi.resetPassword({ email, code, newPassword });
 
   return (
     <AuthContext.Provider value={{
@@ -83,6 +86,7 @@ export function AuthProvider({ children }) {
       updateUser,
       verifyEmail,
       resendVerification,
+      verificationStatus,
       forgotPassword,
       resetPassword,
     }}>

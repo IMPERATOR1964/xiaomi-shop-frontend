@@ -1,14 +1,22 @@
-// Контракты бэка (см. AuthController.java):
-//   POST /api/auth/register             { username, email, password }     → 201 AuthResponse
-//   POST /api/auth/login                { username, password }            → 200 AuthResponse
-//   GET  /api/auth/verify-email?token=                                    → 200 EmailVerificationResponse
-//   POST /api/auth/resend-verification?email=                             → 200 EmailVerificationResponse
-//   POST /api/auth/forgot-password      { email }                         → 200 { message }
-//   POST /api/auth/reset-password       { token, newPassword }            → 200 { message }
+// Контракты бэка (Voltix backend v5, AuthController.java):
 //
-// AuthResponse: { token, refreshToken, username, email }
+//   POST  /api/auth/register             { username, email, password }    → 201 AuthResponse
+//   POST  /api/auth/login                { username, password }           → 200 AuthResponse
+//   POST  /api/auth/verify-email         { email, code }                  → 200 EmailVerificationResponse
+//   POST  /api/auth/resend-verification?email=...                          → 200 EmailVerificationResponse
+//   POST  /api/auth/forgot-password      { email }                        → 200 { message }
+//   POST  /api/auth/reset-password       { email, code, newPassword }     → 200 { message }   (camelCase!)
+//                                                                          → 404 если запроса нет
+//                                                                          → 409 если код истёк/использован
+//   GET   /api/auth/verification-status?email=...                          → 200 VerificationStatusResponse
+//
+// AuthResponse:                { token, refreshToken, username, email,
+//                                emailVerified, verificationRequiredUntil, verificationCodeValidUntil }
+// EmailVerificationResponse:   { success, message, email }
+// VerificationStatusResponse:  { emailVerified, verificationRequiredUntil, verificationCodeValidUntil,
+//                                secondsUntilDeletion, secondsUntilCodeExpires, canResend, message }
 
-import { post, get, tokenStore } from './client';
+import { get, post, tokenStore } from './client';
 
 export const authApi = {
   register: ({ username, email, password }) =>
@@ -22,15 +30,21 @@ export const authApi = {
 
   logout: () => tokenStore.clear(),
 
-  verifyEmail: (token) =>
-    get('/auth/verify-email', { params: { token }, auth: false }),
+  verifyEmail: ({ email, code }) =>
+    post('/auth/verify-email', { email, code }, { auth: false }),
 
+  // Resend — email в query (как @RequestParam на бэке), body пустое.
   resendVerification: (email) =>
     post('/auth/resend-verification', undefined, { params: { email }, auth: false }),
+
+  // GET /auth/verification-status?email=... — публичный, защищён rate-limit 20 req/min/IP.
+  verificationStatus: (email) =>
+    get('/auth/verification-status', { params: { email }, auth: false }),
 
   forgotPassword: (email) =>
     post('/auth/forgot-password', { email }, { auth: false }),
 
-  resetPassword: ({ token, newPassword }) =>
-    post('/auth/reset-password', { token, newPassword }, { auth: false }),
+  // ВНИМАНИЕ: бэк ждёт camelCase `newPassword` (Jackson дефолт), а не snake_case.
+  resetPassword: ({ email, code, newPassword }) =>
+    post('/auth/reset-password', { email, code, newPassword }, { auth: false }),
 };

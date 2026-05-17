@@ -29,6 +29,7 @@ import './styles/reviews.css';
 import './styles/ui-states.css';
 import './styles/orders.css';
 import './styles/admin.css';
+import './styles/code-input.css';
 
 export default function App() {
   return (

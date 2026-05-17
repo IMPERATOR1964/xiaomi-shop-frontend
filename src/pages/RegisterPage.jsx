@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api';
+import { pendingVerify } from '../utils/authPending';
 import '../styles/auth.css';
 
 export default function RegisterPage() {
@@ -40,9 +41,19 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register({ username: username.trim(), email: email.trim(), password });
-      setSuccess('Аккаунт создан. На вашу почту отправлено письмо для подтверждения email.');
-      setTimeout(() => navigate('/profile'), 1500);
+      const targetEmail = email.trim();
+      const res = await register({ username: username.trim(), email: targetEmail, password });
+      setSuccess('Аккаунт создан. Сейчас введёте 5-значный код из письма…');
+      pendingVerify.set(targetEmail);
+      setTimeout(() => navigate('/verify-email', {
+        state: {
+          email: targetEmail,
+          // Дедлайны из AuthResponse — VerifyEmailPage запустит таймеры до удаления аккаунта
+          // и до истечения кода (можно не ждать запрос verification-status).
+          verificationRequiredUntil:   res?.verificationRequiredUntil,
+          verificationCodeValidUntil:  res?.verificationCodeValidUntil,
+        },
+      }), 900);
     } catch (err) {
       if (err instanceof ApiError) {
         const msg = String(err.message || '').toLowerCase();
