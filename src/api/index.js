@@ -10,6 +10,8 @@ export { ordersApi }     from './orders';
 export { wishlistApi }   from './wishlist';
 export { reviewsApi }    from './reviews';
 export { adminApi }      from './admin';
+export { usersApi }      from './users';
+export { reviewPhotosApi } from './reviewPhotos';
 export {
   adaptProduct,
   adaptProductList,

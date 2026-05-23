@@ -67,6 +67,12 @@ export default function ProductCard({ product, index = 0 }) {
         </Link>
         <p className="product-card-desc">{product.shortDesc}</p>
 
+        {product.availabilityLabel && (
+          <div className={`product-card-stock stock-${(product.availabilityStatus || '').toLowerCase()}`}>
+            {product.availabilityLabel}
+          </div>
+        )}
+
         <div className="product-card-footer">
           <div className="product-card-prices">
             <span className="product-card-price">{formatPrice(product.price)}</span>

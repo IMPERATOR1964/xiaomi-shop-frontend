@@ -5,6 +5,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useCompare } from '../context/CompareContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { usersApi } from '../api';
 import '../styles/auth.css';
 
 export default function ProfilePage() {
@@ -50,11 +51,11 @@ export default function ProfilePage() {
   // ===== Аватар =====
   const pickAvatar = () => fileRef.current?.click();
 
-  const onAvatarSelected = (e) => {
+  const onAvatarSelected = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 400 * 1024) {
-      toast?.error?.('Выберите файл меньше 400 КБ');
+    if (file.size > 1024 * 1024) {
+      toast?.error?.('Выберите файл меньше 1 МБ');
       e.target.value = '';
       return;
     }
@@ -63,19 +64,25 @@ export default function ProfilePage() {
       e.target.value = '';
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateUser({ avatarUrl: reader.result });
+    try {
+      const url = await usersApi.uploadAvatar(file);
+      updateUser({ avatarUrl: url });
       toast?.success?.('Фото обновлено');
-    };
-    reader.onerror = () => toast?.error?.('Не удалось загрузить фото');
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    } catch (err) {
+      toast?.error?.(err?.message || 'Не удалось загрузить фото');
+    } finally {
+      e.target.value = '';
+    }
   };
 
-  const removeAvatar = () => {
-    updateUser({ avatarUrl: null });
-    toast?.info?.('Фото удалено');
+  const removeAvatar = async () => {
+    try {
+      await usersApi.removeAvatar();
+      updateUser({ avatarUrl: null });
+      toast?.info?.('Фото удалено');
+    } catch (err) {
+      toast?.error?.(err?.message || 'Не удалось удалить');
+    }
   };
 
   const Badge = ({ n }) =>

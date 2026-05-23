@@ -116,6 +116,12 @@ export default function ProductPage() {
 
             <p className="product-detail-desc">{product.desc}</p>
 
+            {product.availabilityLabel && (
+              <div className={`product-detail-stock stock-${(product.availabilityStatus || '').toLowerCase()}`}>
+                {product.availabilityLabel}
+              </div>
+            )}
+
             <ProductVariants product={product} />
 
             <div className="product-detail-price-row">

@@ -4,7 +4,13 @@
       "Bash(npm run *)",
       "Read(//c/Users/safik/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/e7136d70-3dd6-4239-bbb4-5a7d1e705e11/8037f949-9584-402d-876f-c08642edd509/skills/docx/**)",
       "Bash(python -m pip install --quiet pandoc)",
-      "Bash(where pandoc *)"
+      "Bash(where pandoc *)",
+      "Bash(rm -rf \"/c/Users/safik/Downloads/voltix-backend-v6\")",
+      "Bash(mkdir -p \"/c/Users/safik/Downloads/voltix-backend-v6\")",
+      "Bash(\"/c/Users/safik/Downloads/7zr.exe\" x *)",
+      "Read(//c/Users/safik/Downloads/voltix-backend-v6/Voltix/src/main/java/com/example/Voltix/controller//**)",
+      "Read(//c/Users/safik/Downloads/voltix-backend-v6/Voltix/src/main/java/com/example/Voltix/dto//**)",
+      "Read(//c/Users/safik/Downloads/voltix-backend-v6/Voltix/src/main/resources/db/changelog/changes//**)"
     ]
   }
 }

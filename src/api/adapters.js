@@ -38,6 +38,12 @@ export function adaptProduct(dto) {
 
   const price = typeof dto.price === 'string' ? Number(dto.price) : dto.price;
 
+  // Галерея (бэк v6): imageUrls — массив до 10 шт, imageUrl = первая.
+  const gallery = Array.isArray(dto.imageUrls)
+    ? dto.imageUrls.map(normalizeImageUrl).filter(Boolean)
+    : [];
+  const primaryImageUrl = normalizeImageUrl(dto.imageUrl) || gallery[0] || null;
+
   return {
     id:           dto.id,
     sku:          dto.sku,
@@ -49,11 +55,16 @@ export function adaptProduct(dto) {
     oldPrice:     null,
     badge:        null,
     image:        ICON_BY_CAT[slug] || '⚡',
-    imageUrl:     normalizeImageUrl(dto.imageUrl),
+    imageUrl:     primaryImageUrl,
+    imageUrls:    gallery,
     stock:        dto.stockQuantity ?? 0,
     isActive:     dto.isActive !== false,
     specs:        dto.attributes || {},
     variantGroup: dto.variantGroupId || null,
+
+    // Новые поля наличия из бэка v6
+    availabilityStatus: dto.availabilityStatus || null,   // OUT_OF_STOCK | LOW_STOCK | IN_STOCK | PLENTY
+    availabilityLabel:  dto.availabilityLabel  || null,   // готовый текст «Осталось 3 шт.»
 
     categoryId:    dto.categoryId,
     categoryName:  dto.categoryName,
@@ -130,6 +141,10 @@ export function adaptReview(dto) {
     cons:    '',
     author:  dto.username || dto.userName || 'Пользователь',
     date:    dto.createdAt,
+    // Бэк v6 возвращает фото отзыва как массив URL'ов
+    photos:  Array.isArray(dto.photos)
+      ? dto.photos.map(normalizeImageUrl).filter(Boolean)
+      : [],
   };
 }
 

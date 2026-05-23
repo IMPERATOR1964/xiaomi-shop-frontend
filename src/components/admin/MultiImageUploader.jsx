@@ -12,26 +12,42 @@
 //   3. ProductResponse возвращать imageUrls.
 // До тех пор: галерея видна только пока юзер открыт на странице.
 
-import { useRef, useState } from 'react';
-import { adminApi } from '../../api';
+import { useEffect, useRef, useState } from 'react';
+import { adminApi, productsApi } from '../../api';
 
 const MAX = 10;
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ACCEPT = 'image/png,image/jpeg,image/webp';
 
-export default function MultiImageUploader({ productId, currentUrl, onChange }) {
+export default function MultiImageUploader({ productId, currentUrl, imageUrls, onChange }) {
   const fileRef = useRef(null);
 
-  // Список галереи. Главное фото — то которое сейчас в БД (currentUrl).
-  // Дублируем currentUrl в начало списка, чтобы оно было видно даже если пришло снаружи.
-  const [gallery, setGallery] = useState(currentUrl ? [currentUrl] : []);
+  // Галерея: предпочитаем массив imageUrls с бэка, иначе fallback на currentUrl.
+  const [gallery, setGallery] = useState(() =>
+    Array.isArray(imageUrls) && imageUrls.length ? imageUrls : (currentUrl ? [currentUrl] : [])
+  );
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
+  // Когда родитель меняет imageUrls — синхронизируемся.
+  useEffect(() => {
+    if (Array.isArray(imageUrls)) setGallery(imageUrls);
+  }, [imageUrls]);
+
   const pick = () => fileRef.current?.click();
 
   const remaining = MAX - gallery.length;
+
+  // Подтягиваем актуальное состояние с бэка (после операций).
+  const refresh = async () => {
+    if (!productId) return;
+    try {
+      const p = await productsApi.byId(productId);
+      if (Array.isArray(p?.imageUrls)) setGallery(p.imageUrls);
+      onChange?.(p?.imageUrl || p?.imageUrls?.[0] || null);
+    } catch {}
+  };
 
   // Файлы выбраны → загружаем по одному
   const onSelect = async (e) => {
@@ -61,23 +77,13 @@ export default function MultiImageUploader({ productId, currentUrl, onChange }) 
     setBusy(true);
     setProgress({ done: 0, total: valid.length });
     try {
-      const newUrls = [];
-      let lastUrl = null;
-      for (let i = 0; i < valid.length; i++) {
-        try {
-          const updated = await adminApi.uploadProductImage(productId, valid[i]);
-          if (updated?.imageUrl) {
-            newUrls.push(updated.imageUrl);
-            lastUrl = updated.imageUrl;
-          }
-        } catch (err) {
-          setError(err?.message || 'Ошибка при загрузке файла');
-        }
-        setProgress(p => ({ ...p, done: p.done + 1 }));
-      }
-      const next = [...gallery, ...newUrls].slice(0, MAX);
-      setGallery(next);
-      if (lastUrl) onChange?.(lastUrl);
+      // Бэк v6: один batch-запрос на весь массив через uploadProductImages.
+      const updated = await adminApi.uploadProductImages(productId, valid);
+      const urls = Array.isArray(updated?.imageUrls) ? updated.imageUrls : [];
+      setGallery(urls);
+      onChange?.(updated?.imageUrl || urls[0] || null);
+    } catch (err) {
+      setError(err?.message || 'Ошибка при загрузке');
     } finally {
       setBusy(false);
       setProgress({ done: 0, total: 0 });
@@ -85,30 +91,31 @@ export default function MultiImageUploader({ productId, currentUrl, onChange }) 
     }
   };
 
-  // Сделать выбранное фото главным (отправляем на бэк ещё раз через скачивание + upload).
-  // Проще всего: бэк уже хранит файл по этому URL. Чтобы сделать «главным», нужно либо
-  // повторно загрузить, либо просто переставить порядок в локальном state.
-  // Для UX просто переставим в локальном state — оповестим onChange.
-  const setMain = (url) => {
+  // Сделать выбранное фото главным — реальный запрос на бэк (порядок массива).
+  const setMain = async (url) => {
     const next = [url, ...gallery.filter(u => u !== url)];
-    setGallery(next);
-    onChange?.(url);
+    setGallery(next); // оптимистичный update
+    try {
+      const updated = await adminApi.reorderGalleryImages(productId, next);
+      onChange?.(updated?.imageUrl || next[0] || null);
+      if (Array.isArray(updated?.imageUrls)) setGallery(updated.imageUrls);
+    } catch (err) {
+      setError(err?.message || 'Не удалось сменить главное фото');
+      refresh();
+    }
   };
 
-  // Удаление: если это текущая главная — вызываем deleteProductImage на бэке.
-  // Иначе — только из локального state.
+  // Удаление одного фото из галереи.
   const removeOne = async (url) => {
     if (!confirm('Удалить это фото из галереи?')) return;
-    if (url === currentUrl) {
-      try {
-        const updated = await adminApi.deleteProductImage(productId);
-        onChange?.(updated.imageUrl || null);
-      } catch (err) {
-        setError(err?.message || 'Не удалось удалить');
-        return;
-      }
+    try {
+      const updated = await adminApi.deleteGalleryImage(productId, url);
+      const urls = Array.isArray(updated?.imageUrls) ? updated.imageUrls : [];
+      setGallery(urls);
+      onChange?.(updated?.imageUrl || urls[0] || null);
+    } catch (err) {
+      setError(err?.message || 'Не удалось удалить');
     }
-    setGallery(g => g.filter(u => u !== url));
   };
 
   return (

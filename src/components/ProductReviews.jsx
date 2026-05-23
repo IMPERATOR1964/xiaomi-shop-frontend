@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useReviews } from '../context/ReviewsContext';
 import { useAuth } from '../context/AuthContext';
-import { ApiError } from '../api';
+import { ApiError, reviewPhotosApi } from '../api';
 
 const Star = ({ filled, half, onClick, onMouseEnter, onMouseLeave }) => (
   <svg
@@ -70,18 +70,20 @@ export default function ProductReviews({ productId }) {
   const [rating, setRating]   = useState(5);
   const [title, setTitle]     = useState('');
   const [text, setText]       = useState('');
-  const [photos, setPhotos]   = useState([]); // data-URL до 5 фоток
+  // photoFiles — реальные File-объекты (на сабмите грузим в бэк).
+  // photoPreviews — data-URL для UI.
+  const [photoFiles, setPhotoFiles]       = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
   const [error, setError]     = useState('');
   const [busy,  setBusy]      = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Выбор фотографий: ограничиваем 5 шт по 2 МБ.
-  // Бэк сейчас не принимает photos — храним только локально (на отправке игнорируются).
-  // Когда бэк добавит поле photos: List<String> и multipart endpoint — поменять отправку.
+  const MAX_PHOTOS = 5;
+
   const onPhotoSelect = (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
-    const remaining = 5 - photos.length;
+    const remaining = MAX_PHOTOS - photoFiles.length;
     const toAdd = files.slice(0, remaining);
     for (const f of toAdd) {
       if (f.size > 2 * 1024 * 1024) {
@@ -89,12 +91,16 @@ export default function ProductReviews({ productId }) {
         continue;
       }
       if (!f.type.startsWith('image/')) continue;
+      setPhotoFiles(prev => [...prev, f]);
       const reader = new FileReader();
-      reader.onload = () => setPhotos(prev => [...prev, reader.result]);
+      reader.onload = () => setPhotoPreviews(prev => [...prev, reader.result]);
       reader.readAsDataURL(f);
     }
   };
-  const removePhoto = (idx) => setPhotos(prev => prev.filter((_, i) => i !== idx));
+  const removePhoto = (idx) => {
+    setPhotoFiles(prev => prev.filter((_, i) => i !== idx));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
+  };
 
   useEffect(() => {
     if (!productId) return;
@@ -115,11 +121,22 @@ export default function ProductReviews({ productId }) {
     }
     setBusy(true);
     try {
-      // photos сейчас бэком не принимаются — пробрасываем для будущей версии,
-      // в текущей версии адаптер их проигнорирует.
+      // 1) Если выбраны фото — сначала грузим multipart'ом, получаем URL'ы.
+      let photos = [];
+      if (photoFiles.length > 0) {
+        try {
+          photos = await reviewPhotosApi.upload(photoFiles);
+        } catch (uploadErr) {
+          setError(uploadErr?.message || 'Не удалось загрузить фото');
+          setBusy(false);
+          return;
+        }
+      }
+      // 2) Создаём отзыв с URL'ами фото.
       await addReview(productId, { rating, title, comment: text, photos });
       setOpen(false);
-      setRating(5); setTitle(''); setText(''); setPhotos([]);
+      setRating(5); setTitle(''); setText('');
+      setPhotoFiles([]); setPhotoPreviews([]);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) setError('Войдите, чтобы оставить отзыв');
       else if (err instanceof ApiError && err.status === 409) setError('Вы уже оставили отзыв');
@@ -184,13 +201,13 @@ export default function ProductReviews({ productId }) {
           <div className="review-form-row">
             <label className="review-form-label">Фотографии (до 5 шт)</label>
             <div className="review-photos">
-              {photos.map((src, i) => (
+              {photoPreviews.map((src, i) => (
                 <div key={i} className="review-photo-thumb">
                   <img src={src} alt={`Фото ${i + 1}`} />
                   <button type="button" onClick={() => removePhoto(i)} title="Удалить">×</button>
                 </div>
               ))}
-              {photos.length < 5 && (
+              {photoFiles.length < MAX_PHOTOS && (
                 <label className="review-photo-add">
                   <input
                     type="file"

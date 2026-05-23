@@ -119,6 +119,20 @@
   line-height: 1.7;
 }
 
+.product-detail-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 100px;
+}
+.product-detail-stock.stock-out_of_stock { background: rgba(229,57,53,0.1); color: var(--danger); }
+.product-detail-stock.stock-low_stock    { background: rgba(255,152,0,0.12); color: #FF9800; }
+.product-detail-stock.stock-in_stock     { background: var(--bg-input); color: var(--text-secondary); }
+.product-detail-stock.stock-plenty       { background: rgba(0,179,65,0.1); color: var(--success); }
+
 /* Варианты */
 .variants {
   display: flex;

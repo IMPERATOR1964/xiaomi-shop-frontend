@@ -154,6 +154,17 @@
   overflow: hidden;
 }
 
+.product-card-stock {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+.product-card-stock.stock-out_of_stock { color: var(--danger); }
+.product-card-stock.stock-low_stock    { color: #FF9800; }
+.product-card-stock.stock-in_stock     { color: var(--text-muted); }
+.product-card-stock.stock-plenty       { color: var(--success); }
+
 .product-card-footer {
   display: flex;
   align-items: center;

@@ -10,9 +10,14 @@ import { request, get, post, put, del, API_URL, tokenStore } from './client';
 import { adaptProduct, adaptCategory } from './adapters';
 
 // Multipart upload — fetch напрямую, чтобы не сериализовать FormData в JSON.
-async function uploadFile(path, file, fieldName = 'file') {
+// files: один файл или массив. fieldName: имя поля multipart ('file' или 'files').
+export async function uploadFile(path, files, fieldName = 'file') {
   const fd = new FormData();
-  fd.append(fieldName, file);
+  if (Array.isArray(files)) {
+    for (const f of files) fd.append(fieldName, f);
+  } else {
+    fd.append(fieldName, files);
+  }
 
   const headers = {};
   const t = tokenStore.get();
@@ -42,13 +47,40 @@ async function uploadFile(path, file, fieldName = 'file') {
 
 export const adminApi = {
   // ===== Изображения товаров =====
+
+  // Legacy: один файл, заменяет imageUrl и добавляет в галерею первой.
   uploadProductImage: async (productId, file) => {
     const data = await uploadFile(`/admin/products/${productId}/image`, file);
     return adaptProduct(data);
   },
 
+  // Новое (бэк v6): пачка до 10 файлов в галерею.
+  uploadProductImages: async (productId, files) => {
+    const data = await uploadFile(`/admin/products/${productId}/images`, files, 'files');
+    return adaptProduct(data);
+  },
+
+  // Удалить «главную» (первую) картинку и сбросить imageUrl.
   deleteProductImage: async (productId) => {
     const data = await request(`/admin/products/${productId}/image`, { method: 'DELETE' });
+    return adaptProduct(data);
+  },
+
+  // Удалить одно фото из галереи по URL.
+  deleteGalleryImage: async (productId, url) => {
+    const data = await request(`/admin/products/${productId}/images`, {
+      method: 'DELETE',
+      params: { url },
+    });
+    return adaptProduct(data);
+  },
+
+  // Сменить порядок (первая = главная) — { urls: [...] }
+  reorderGalleryImages: async (productId, urls) => {
+    const data = await request(`/admin/products/${productId}/images/order`, {
+      method: 'PUT',
+      body: { urls },
+    });
     return adaptProduct(data);
   },
 

@@ -25,6 +25,7 @@ export default function AdminProductFormPage() {
   const [categoryId,  setCategoryId]  = useState('');
   const [sku,         setSku]         = useState(''); // показывается в read-only при редактировании
   const [imageUrl,    setImageUrl]    = useState(null);
+  const [imageUrls,   setImageUrls]   = useState([]);
   const [isActive,    setIsActive]    = useState(true);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function AdminProductFormPage() {
         setCategoryId(String(p.categoryId || ''));
         setSku(p.sku || '');
         setImageUrl(p.imageUrl || null);
+        setImageUrls(Array.isArray(p.imageUrls) ? p.imageUrls : []);
         setIsActive(p.isActive !== false);
       })
       .catch(err => { if (alive) setLoadError(err?.message || 'Товар не найден'); })
@@ -219,6 +221,7 @@ export default function AdminProductFormPage() {
           <MultiImageUploader
             productId={isEdit ? Number(id) : null}
             currentUrl={imageUrl}
+            imageUrls={imageUrls}
             onChange={setImageUrl}
           />
           {isEdit && imageUrl && (

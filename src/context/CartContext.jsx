@@ -1,9 +1,12 @@
-// Гибридная корзина:
-//  - Гость        → localStorage
-//  - Авторизован  → /api/cart через cartApi
-// При логине гостевая корзина переносится на сервер.
+// Корзина: гость → localStorage, авторизованный → /api/cart через cartApi.
+//
+// Главная защита от «корзина возвращается после F5»:
+//   merge гостевой корзины на сервер выполняется ТОЛЬКО при свежем login
+//   (переход isAuthenticated: false → true в этой же сессии React).
+//   При F5 / открытии новой вкладки с уже валидным JWT — merge НЕ запускается,
+//   localStorage не читается и не «воскрешает» удалённые позиции.
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { cartApi, ApiError } from '../api';
@@ -20,28 +23,46 @@ const writeLocal = (items) => localStorage.setItem(STORAGE_KEY, JSON.stringify(i
 export function CartProvider({ children }) {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const [cart, setCart]   = useState(readLocal);
+
+  // Если на момент монтажа уже залогинены — стартуем с пустой корзины
+  // (НЕ читаем localStorage). Серверная корзина подтянется через fetchServer.
+  const [cart, setCart]   = useState(() => (isAuthenticated ? [] : readLocal()));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Отслеживаем предыдущее состояние isAuthenticated.
+  // Свежим логином считаем переход false → true внутри одной сессии React.
+  // При первом монтаже компоненты prevAuthRef = isAuthenticated, поэтому
+  // wasJustLoggedIn = false — никакого merge при F5.
+  const prevAuthRef = useRef(isAuthenticated);
+
   useEffect(() => {
     let alive = true;
+    const wasJustLoggedIn = !prevAuthRef.current && isAuthenticated;
+    prevAuthRef.current = isAuthenticated;
 
+    if (!isAuthenticated) {
+      // Гость: показываем гостевую корзину из localStorage.
+      setCart(readLocal());
+      return;
+    }
+
+    // Авторизованный
     const fetchServer = async () => {
       setLoading(true);
       try {
-        // ВАЖНО: гостевую корзину льём на сервер только при свежем логине,
-        // а не при каждом рефреше — иначе очищенная админом корзина
-        // снова заполняется из устаревшего localStorage.
-        const local = readLocal();
-        const alreadyMerged = sessionStorage.getItem('voltix-cart-merged') === '1';
-        if (local.length && !alreadyMerged) {
-          for (const it of local) {
-            try { await cartApi.addItem(it.id, it.qty); } catch {}
+        // Merge — ТОЛЬКО при свежем login и только если в localStorage реально есть items.
+        if (wasJustLoggedIn) {
+          const local = readLocal();
+          if (local.length) {
+            for (const it of local) {
+              try { await cartApi.addItem(it.id, it.qty); } catch {}
+            }
           }
-          sessionStorage.setItem('voltix-cart-merged', '1');
         }
-        // В любом случае чистим гостевую корзину для авторизованного — её больше быть не должно.
+        // Гарантия: гостевой корзины больше быть не должно. Чистим
+        // localStorage всегда — чтобы при F5 или открытии новой вкладки
+        // не было соблазна перенести «старые» items на сервер.
         writeLocal([]);
 
         const server = await cartApi.get();
@@ -53,19 +74,12 @@ export function CartProvider({ children }) {
         if (alive) setLoading(false);
       }
     };
-
-    if (isAuthenticated) {
-      fetchServer();
-    } else {
-      // Гость: сбрасываем флаг merge — при следующем логине гостевая корзина
-      // снова мигрирует на сервер.
-      sessionStorage.removeItem('voltix-cart-merged');
-      setCart(readLocal());
-    }
+    fetchServer();
 
     return () => { alive = false; };
   }, [isAuthenticated]);
 
+  // Запись гостевой корзины в localStorage. Только для гостя.
   useEffect(() => {
     if (!isAuthenticated) writeLocal(cart);
   }, [cart, isAuthenticated]);
@@ -134,14 +148,12 @@ export function CartProvider({ children }) {
   }, [isAuthenticated, removeFromCart]);
 
   const clearCart = useCallback(async () => {
-    // 1) Сразу чистим локальный state и localStorage — даже для авторизованного,
-    //    чтобы при рефреше fetchServer не считал, что есть гостевая корзина.
     setCart([]);
-    writeLocal([]);
-    // 2) Если есть сессия — дожидаемся ответа сервера, чтобы не было рассинхрона.
+    writeLocal([]); // даже для авторизованного — чтобы F5 не «воскресил»
     if (isAuthenticated) {
-      try { await cartApi.clear(); } catch (err) {
-        // если упало — подтянем актуальное состояние с сервера
+      try { await cartApi.clear(); }
+      catch (err) {
+        // если сервер не очистил — подтягиваем серверное состояние, чтобы не было ложного UI
         try {
           const server = await cartApi.get();
           setCart(server.items);
