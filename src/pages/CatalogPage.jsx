@@ -5,7 +5,8 @@ import CategoryCard from '../components/CategoryCard';
 import CategoryIcon from '../components/CategoryIcon';
 import CatalogFilter from '../components/CatalogFilter';
 import { ErrorState, EmptyState, ProductCardSkeleton } from '../components/UiStates';
-import { CATEGORIES, FILTER_CONFIG } from '../data/products';
+import { FILTER_CONFIG } from '../data/products';
+import { useCategories } from '../context/CategoriesContext';
 import { productsApi } from '../api';
 import '../styles/catalog.css';
 
@@ -15,6 +16,7 @@ export default function CatalogPage() {
   const { category } = useParams();
   const navigate = useNavigate();
   const routerLoc = useLocation();
+  const { categories: CATEGORIES, findBySlug } = useCategories();
   const activeCategory = category || 'all';
   const isMain = activeCategory === 'all';
 
@@ -23,7 +25,7 @@ export default function CatalogPage() {
     return params.get('q') || '';
   }, [routerLoc.search]);
 
-  const activeCat = CATEGORIES.find(c => c.id === activeCategory);
+  const activeCat = findBySlug(activeCategory);
   const backendCategoryId = activeCat?.backendId || null;
 
   // Запоминаем сортировку per-категория в localStorage.

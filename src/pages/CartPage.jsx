@@ -3,7 +3,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice, CATEGORIES } from '../data/products';
 import { Loading, EmptyState } from '../components/UiStates';
-import CategoryIcon from '../components/CategoryIcon';
+import ProductImage from '../components/ProductImage';
 import '../styles/cart.css';
 
 export default function CartPage() {
@@ -60,10 +60,13 @@ export default function CartPage() {
             {cart.map(item => (
               <div className="cart-item" key={item.id}>
                 <div className="cart-item-image">
-                  {item.imageUrl
-                    ? <img src={item.imageUrl} alt={item.name} className="cart-item-photo" />
-                    : <CategoryIcon category={item.category} size={36} />
-                  }
+                  <ProductImage
+                    src={item.imageUrl}
+                    alt={item.name}
+                    category={item.category}
+                    iconSize={36}
+                    imgClassName="cart-item-photo"
+                  />
                 </div>
                 <div className="cart-item-info">
                   <Link to={`/product/${item.id}`} className="cart-item-name">{item.name}</Link>

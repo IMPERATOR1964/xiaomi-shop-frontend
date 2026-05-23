@@ -7,11 +7,12 @@ import { formatPrice } from '../data/products';
 import { Loading } from '../components/UiStates';
 import '../styles/orders.css';
 
-// Возможные следующие статусы для смены админом
+// Возможные следующие статусы для смены админом.
+// Из PAID можно сразу пометить «Доставлен» (например, самовывоз без отдельного «Отправлен»).
 const ADMIN_TRANSITIONS = {
   PENDING:   ['PAID', 'CANCELLED'],
-  PAID:      ['SHIPPED', 'CANCELLED'],
-  SHIPPED:   ['DELIVERED'],
+  PAID:      ['SHIPPED', 'DELIVERED', 'CANCELLED'],
+  SHIPPED:   ['DELIVERED', 'CANCELLED'],
   DELIVERED: [],
   CANCELLED: [],
 };

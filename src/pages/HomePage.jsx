@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import RecentlyViewed from '../components/RecentlyViewed';
+import ProductImage from '../components/ProductImage';
 import { ProductCardSkeleton } from '../components/UiStates';
 import { productsApi } from '../api';
+import { formatPrice } from '../data/products';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useHistory } from '../context/HistoryContext';
@@ -59,6 +61,7 @@ export default function HomePage() {
 
   const [popular, setPopular] = useState([]);
   const [newest,  setNewest]  = useState([]);
+  const [topProduct, setTopProduct] = useState(null); // самый дорогой — карточка hero
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
@@ -70,13 +73,15 @@ export default function HomePage() {
     setError(null);
 
     Promise.all([
-      productsApi.filter({ sortBy: 'popular' }, { size: 4 }),
-      productsApi.filter({ sortBy: 'newest'  }, { size: 4 }),
+      productsApi.filter({ sortBy: 'popular' },    { size: 4 }),
+      productsApi.filter({ sortBy: 'newest'  },    { size: 4 }),
+      productsApi.filter({ sortBy: 'price_desc' }, { size: 1 }), // самый дорогой
     ])
-      .then(([pop, nw]) => {
+      .then(([pop, nw, top]) => {
         if (!alive) return;
         setPopular(pop.items);
         setNewest(nw.items);
+        setTopProduct(top.items[0] || null);
       })
       .catch(err => { if (alive) setError(err?.message || 'Не удалось загрузить'); })
       .finally(() => { if (alive) setLoading(false); });
@@ -114,11 +119,37 @@ export default function HomePage() {
             </div>
           </div>
           <div className="hero-visual">
-            <div className="hero-phone">
-              <div className="hero-phone-brand">XIAOMI</div>
-              <div className="hero-phone-model">14 Ultra</div>
-              <div className="hero-phone-spec">Leica · Snapdragon 8 Gen 3</div>
-            </div>
+            {topProduct ? (
+              <Link to={`/product/${topProduct.id}`} className="hero-card" title={topProduct.name}>
+                <span className="hero-card-badge">Топ предложение</span>
+                <div className="hero-card-image">
+                  <ProductImage
+                    src={topProduct.imageUrl}
+                    alt={topProduct.name}
+                    category={topProduct.category}
+                    iconSize={96}
+                    imgClassName="hero-card-photo"
+                  />
+                </div>
+                <div className="hero-card-name">{topProduct.name}</div>
+                {topProduct.shortDesc && (
+                  <div className="hero-card-desc">{topProduct.shortDesc}</div>
+                )}
+                <div className="hero-card-price">{formatPrice(topProduct.price)}</div>
+                <span className="hero-card-cta">
+                  Перейти к товару
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                  </svg>
+                </span>
+              </Link>
+            ) : (
+              <div className="hero-phone">
+                <div className="hero-phone-brand">XIAOMI</div>
+                <div className="hero-phone-model">14 Ultra</div>
+                <div className="hero-phone-spec">Leica · Snapdragon 8 Gen 3</div>
+              </div>
+            )}
           </div>
         </div>
       </section>

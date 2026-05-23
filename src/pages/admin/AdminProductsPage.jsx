@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { productsApi, ApiError } from '../../api';
 import { CATEGORIES, formatPrice } from '../../data/products';
 import { Loading, ErrorState, EmptyState } from '../../components/UiStates';
+import ProductImage from '../../components/ProductImage';
 
 export default function AdminProductsPage() {
   const navigate = useNavigate();
@@ -16,29 +17,48 @@ export default function AdminProductsPage() {
 
   // Фильтры
   const [query, setQuery]         = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [showInactive, setShowInactive] = useState(true);
+
+  // Дебаунс поискового запроса: 350мс после последнего ввода — лонг-запрос пойдёт на сервер.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => clearTimeout(t);
+  }, [query]);
 
   const fetchData = useCallback(() => {
     setLoading(true);
     setError(null);
 
-    const filterReq = { sortBy: 'newest' };
-    if (query.trim())   filterReq.query = query.trim();
-    if (categoryId)     filterReq.categoryId = Number(categoryId);
-    // Бэк по дефолту отдаёт isActive=true; если showInactive — фронт админка
-    // не хочет фильтровать по этому, бэк уже возвращает все isActive=true.
-    // Для удалённых товаров пока используем admin-эндпоинты при необходимости.
+    const q = debouncedQuery.trim();
+    // Если введён поиск — берём /products/search (надёжнее FTS на бэке).
+    // Если только категория/без поиска — /products/filter с sortBy.
+    const request = q
+      ? productsApi.search(q, { page, size: 20 })
+      : productsApi.filter(
+          {
+            sortBy: 'newest',
+            ...(categoryId ? { categoryId: Number(categoryId) } : {}),
+          },
+          { page, size: 20 },
+        );
 
-    productsApi.filter(filterReq, { page, size: 20 })
+    request
       .then(res => {
-        setItems(res.items);
+        // Если есть и поиск, и категория — пост-фильтрация на фронте.
+        let list = res.items;
+        if (q && categoryId) {
+          const cat = CATEGORIES.find(c => c.backendId === Number(categoryId));
+          if (cat) list = list.filter(p => p.category === cat.id);
+        }
+        setItems(list);
         setPages(res.pages);
-        setTotal(res.total);
+        setTotal(q && categoryId ? list.length : res.total);
       })
       .catch(err => setError(err?.message || 'Не удалось загрузить'))
       .finally(() => setLoading(false));
-  }, [query, categoryId, page]);
+  }, [debouncedQuery, categoryId, page]);
 
   useEffect(() => {
     fetchData();
@@ -130,10 +150,12 @@ export default function AdminProductsPage() {
                       <tr key={p.id} className={inactive ? 'admin-row-inactive' : ''}>
                         <td>
                           <div className="admin-product-thumb">
-                            {p.imageUrl
-                              ? <img src={p.imageUrl} alt={p.name} />
-                              : <span style={{ fontSize: 28 }}>{p.image}</span>
-                            }
+                            <ProductImage
+                              src={p.imageUrl}
+                              alt={p.name}
+                              category={p.category}
+                              iconSize={28}
+                            />
                           </div>
                         </td>
                         <td>

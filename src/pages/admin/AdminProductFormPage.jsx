@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { productsApi, ApiError } from '../../api';
-import { CATEGORIES } from '../../data/products';
+import { useCategories } from '../../context/CategoriesContext';
 import { Loading, ErrorState } from '../../components/UiStates';
-import ImageUploader from '../../components/admin/ImageUploader';
+import MultiImageUploader from '../../components/admin/MultiImageUploader';
 
 export default function AdminProductFormPage() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const { categories: CATEGORIES } = useCategories();
 
   const [loading, setLoading] = useState(isEdit);
   const [busy,    setBusy]    = useState(false);
@@ -16,14 +17,13 @@ export default function AdminProductFormPage() {
   const [error,   setError]   = useState('');
   const [success, setSuccess] = useState('');
 
-  // Поля формы
+  // Поля формы (SKU и variantGroup — generates the backend automatically)
   const [name,        setName]        = useState('');
   const [description, setDescription] = useState('');
   const [price,       setPrice]       = useState('');
   const [stock,       setStock]       = useState('');
   const [categoryId,  setCategoryId]  = useState('');
-  const [sku,         setSku]         = useState('');
-  const [variantGroup, setVariantGroup] = useState('');
+  const [sku,         setSku]         = useState(''); // показывается в read-only при редактировании
   const [imageUrl,    setImageUrl]    = useState(null);
   const [isActive,    setIsActive]    = useState(true);
 
@@ -40,7 +40,6 @@ export default function AdminProductFormPage() {
         setStock(String(p.stock ?? 0));
         setCategoryId(String(p.categoryId || ''));
         setSku(p.sku || '');
-        setVariantGroup(p.variantGroup || '');
         setImageUrl(p.imageUrl || null);
         setIsActive(p.isActive !== false);
       })
@@ -54,7 +53,6 @@ export default function AdminProductFormPage() {
     if (!price || Number(price) <= 0)            return 'Цена должна быть > 0';
     if (stock !== '' && Number(stock) < 0)       return 'Остаток не может быть отрицательным';
     if (!categoryId)                              return 'Выберите категорию';
-    if (sku && !/^\d{7}$/.test(sku))              return 'SKU должен быть ровно 7 цифр';
     return null;
   };
 
@@ -80,6 +78,7 @@ export default function AdminProductFormPage() {
         await productsApi.update(id, body);
         setSuccess('Изменения сохранены');
       } else {
+        // SKU и variantGroupId генерирует бэк — не передаём.
         const body = {
           name: name.trim(),
           description: description.trim() || null,
@@ -87,9 +86,6 @@ export default function AdminProductFormPage() {
           stockQuantity: stock === '' ? 0 : Number(stock),
           categoryId: Number(categoryId),
         };
-        if (sku) body.sku = sku;
-        if (variantGroup.trim()) body.variantGroupId = variantGroup.trim();
-
         const created = await productsApi.create(body);
         setSuccess('Товар создан. Теперь можно загрузить фото.');
         setTimeout(() => navigate(`/admin/products/${created.id}`), 600);
@@ -183,30 +179,19 @@ export default function AdminProductFormPage() {
             </select>
           </div>
 
-          {!isEdit && (
-            <div className="admin-form-row">
-              <div className="form-group">
-                <label className="form-label">SKU (опционально)</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={sku}
-                  onChange={e => setSku(e.target.value)}
-                  placeholder="0000123 (7 цифр) или оставить пустым"
-                  maxLength={7}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Variant group</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={variantGroup}
-                  onChange={e => setVariantGroup(e.target.value)}
-                  placeholder="Например: PH-14P"
-                  maxLength={50}
-                />
-              </div>
+          {isEdit && sku && (
+            <div className="form-group">
+              <label className="form-label">Артикул (SKU)</label>
+              <input
+                className="form-input"
+                type="text"
+                value={sku}
+                disabled
+                style={{ fontFamily: 'JetBrains Mono, Courier New, monospace', letterSpacing: 1 }}
+              />
+              <small style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                Артикул генерируется автоматически и не меняется.
+              </small>
             </div>
           )}
 
@@ -230,8 +215,8 @@ export default function AdminProductFormPage() {
 
         {/* Правая колонка — фото */}
         <aside className="admin-form-sidebar">
-          <h3 className="admin-section-title">Фотография товара</h3>
-          <ImageUploader
+          <h3 className="admin-section-title">Фотографии товара</h3>
+          <MultiImageUploader
             productId={isEdit ? Number(id) : null}
             currentUrl={imageUrl}
             onChange={setImageUrl}

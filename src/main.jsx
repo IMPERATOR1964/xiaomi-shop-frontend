@@ -11,6 +11,7 @@ import { ReviewsProvider } from './context/ReviewsContext';
 import { LocationProvider } from './context/LocationContext';
 import { HistoryProvider } from './context/HistoryContext';
 import { ToastProvider } from './context/ToastContext';
+import { CategoriesProvider } from './context/CategoriesContext';
 import './styles/global.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -20,17 +21,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <ToastProvider>
           <LocationProvider>
             <AuthProvider>
-              <HistoryProvider>
-                <FavoritesProvider>
-                  <CompareProvider>
-                    <ReviewsProvider>
-                      <CartProvider>
-                        <App />
-                      </CartProvider>
-                    </ReviewsProvider>
-                  </CompareProvider>
-                </FavoritesProvider>
-              </HistoryProvider>
+              <CategoriesProvider>
+                <HistoryProvider>
+                  <FavoritesProvider>
+                    <CompareProvider>
+                      <ReviewsProvider>
+                        <CartProvider>
+                          <App />
+                        </CartProvider>
+                      </ReviewsProvider>
+                    </CompareProvider>
+                  </FavoritesProvider>
+                </HistoryProvider>
+              </CategoriesProvider>
             </AuthProvider>
           </LocationProvider>
         </ToastProvider>

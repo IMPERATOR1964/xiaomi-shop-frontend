@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { CATEGORIES, formatPrice } from '../data/products';
 import { productsApi } from '../api';
 import { Loading, EmptyState } from '../components/UiStates';
-import CategoryIcon from '../components/CategoryIcon';
+import ProductImage from '../components/ProductImage';
 import '../styles/compare.css';
 
 export default function ComparePage() {
@@ -71,10 +71,13 @@ export default function ComparePage() {
                     {products.map(p => (
                       <th key={p.id} className="compare-product-cell">
                         <div className="compare-product-img">
-                          {p.imageUrl
-                            ? <img src={p.imageUrl} alt={p.name} style={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain' }} />
-                            : <CategoryIcon category={p.category} size={56} />
-                          }
+                          <ProductImage
+                            src={p.imageUrl}
+                            alt={p.name}
+                            category={p.category}
+                            iconSize={56}
+                            imgClassName="compare-product-img-img"
+                          />
                         </div>
                         <Link to={`/product/${p.id}`} className="compare-product-name">{p.name}</Link>
                         <div className="compare-product-price">{formatPrice(p.price)}</div>

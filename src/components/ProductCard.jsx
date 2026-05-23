@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCompare } from '../context/CompareContext';
 import CategoryIcon from './CategoryIcon';
+import ProductImage from './ProductImage';
 import { formatPrice } from '../data/products';
 import '../styles/product-card.css';
 
@@ -50,10 +51,14 @@ export default function ProductCard({ product, index = 0 }) {
             </svg>
           </button>
         </div>
-        {product.imageUrl
-          ? <img src={product.imageUrl} alt={product.name} loading="lazy" className="product-card-photo" />
-          : <CategoryIcon category={product.category} size={64} className="product-card-svg" />
-        }
+        <ProductImage
+          src={product.imageUrl}
+          alt={product.name}
+          category={product.category}
+          iconSize={64}
+          imgClassName="product-card-photo"
+          className="product-card-svg"
+        />
       </Link>
 
       <div className="product-card-body">

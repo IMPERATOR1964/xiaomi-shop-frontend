@@ -11,6 +11,7 @@ import SimilarProducts from '../components/SimilarProducts';
 import RecentlyViewed from '../components/RecentlyViewed';
 import ProductReviews, { StarRating } from '../components/ProductReviews';
 import CategoryIcon from '../components/CategoryIcon';
+import ProductImage from '../components/ProductImage';
 import { Loading } from '../components/UiStates';
 import { useHistory } from '../context/HistoryContext';
 import '../styles/product.css';
@@ -84,10 +85,14 @@ export default function ProductPage() {
 
         <div className="product-detail">
           <div className="product-detail-image">
-            {product.imageUrl
-              ? <img src={product.imageUrl} alt={product.name} className="product-detail-photo" />
-              : <CategoryIcon category={product.category} size={140} className="product-detail-svg" />
-            }
+            <ProductImage
+              src={product.imageUrl}
+              alt={product.name}
+              category={product.category}
+              iconSize={140}
+              imgClassName="product-detail-photo"
+              className="product-detail-svg"
+            />
           </div>
 
           <div className="product-detail-info">

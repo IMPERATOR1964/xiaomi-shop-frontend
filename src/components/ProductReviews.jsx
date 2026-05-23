@@ -70,9 +70,31 @@ export default function ProductReviews({ productId }) {
   const [rating, setRating]   = useState(5);
   const [title, setTitle]     = useState('');
   const [text, setText]       = useState('');
+  const [photos, setPhotos]   = useState([]); // data-URL до 5 фоток
   const [error, setError]     = useState('');
   const [busy,  setBusy]      = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Выбор фотографий: ограничиваем 5 шт по 2 МБ.
+  // Бэк сейчас не принимает photos — храним только локально (на отправке игнорируются).
+  // Когда бэк добавит поле photos: List<String> и multipart endpoint — поменять отправку.
+  const onPhotoSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    const remaining = 5 - photos.length;
+    const toAdd = files.slice(0, remaining);
+    for (const f of toAdd) {
+      if (f.size > 2 * 1024 * 1024) {
+        setError(`«${f.name}» больше 2 МБ — пропущено`);
+        continue;
+      }
+      if (!f.type.startsWith('image/')) continue;
+      const reader = new FileReader();
+      reader.onload = () => setPhotos(prev => [...prev, reader.result]);
+      reader.readAsDataURL(f);
+    }
+  };
+  const removePhoto = (idx) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
   useEffect(() => {
     if (!productId) return;
@@ -93,9 +115,11 @@ export default function ProductReviews({ productId }) {
     }
     setBusy(true);
     try {
-      await addReview(productId, { rating, title, comment: text });
+      // photos сейчас бэком не принимаются — пробрасываем для будущей версии,
+      // в текущей версии адаптер их проигнорирует.
+      await addReview(productId, { rating, title, comment: text, photos });
       setOpen(false);
-      setRating(5); setTitle(''); setText('');
+      setRating(5); setTitle(''); setText(''); setPhotos([]);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) setError('Войдите, чтобы оставить отзыв');
       else if (err instanceof ApiError && err.status === 409) setError('Вы уже оставили отзыв');
@@ -156,6 +180,35 @@ export default function ProductReviews({ productId }) {
               maxLength={5000}
             />
           </div>
+
+          <div className="review-form-row">
+            <label className="review-form-label">Фотографии (до 5 шт)</label>
+            <div className="review-photos">
+              {photos.map((src, i) => (
+                <div key={i} className="review-photo-thumb">
+                  <img src={src} alt={`Фото ${i + 1}`} />
+                  <button type="button" onClick={() => removePhoto(i)} title="Удалить">×</button>
+                </div>
+              ))}
+              {photos.length < 5 && (
+                <label className="review-photo-add">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    multiple
+                    onChange={onPhotoSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  <span>Добавить</span>
+                </label>
+              )}
+            </div>
+          </div>
+
           <button type="submit" className="btn-primary" disabled={busy}>
             {busy ? 'Отправляем…' : 'Отправить отзыв'}
           </button>
@@ -178,6 +231,15 @@ export default function ProductReviews({ productId }) {
               </div>
               {r.title && <div style={{ fontWeight: 700, marginBottom: 6 }}>{r.title}</div>}
               {r.text && <p className="review-text">{r.text}</p>}
+              {Array.isArray(r.photos) && r.photos.length > 0 && (
+                <div className="review-photos-view">
+                  {r.photos.map((src, i) => (
+                    <a key={i} href={src} target="_blank" rel="noreferrer" className="review-photo-view">
+                      <img src={src} alt={`Фото ${i + 1}`} />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

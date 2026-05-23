@@ -55,7 +55,6 @@ export default function AdminDashboardPage() {
               sub={data.activeProducts != null ? `активных: ${data.activeProducts}` : null} />
         <Stat icon="orders"   label="Заказов"       value={data.totalOrders ?? 0}
               sub={data.pendingOrders != null ? `в ожидании: ${data.pendingOrders}` : null} />
-        <Stat icon="revenue"  label="Выручка"       value={formatPrice(Number(data.totalRevenue || 0))} />
       </div>
 
       {Array.isArray(data.topProducts) && data.topProducts.length > 0 && (

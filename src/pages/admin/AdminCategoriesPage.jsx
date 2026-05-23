@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { categoriesApi, adminApi, ApiError } from '../../api';
+import { useCategories } from '../../context/CategoriesContext';
 import { Loading, ErrorState } from '../../components/UiStates';
 
 export default function AdminCategoriesPage() {
+  const { reload: reloadCategories } = useCategories();
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -36,6 +38,7 @@ export default function AdminCategoriesPage() {
       await adminApi.categories.create({ name: name.trim(), description: desc.trim() || null });
       setName(''); setDesc('');
       load();
+      reloadCategories(); // подтягиваем глобально, чтобы появилось в селектах товаров и каталоге
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : 'Не удалось создать');
     } finally {
@@ -52,6 +55,7 @@ export default function AdminCategoriesPage() {
     try {
       await adminApi.categories.remove(cat.id);
       load();
+      reloadCategories();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Не удалось удалить');
     }
@@ -63,6 +67,7 @@ export default function AdminCategoriesPage() {
     try {
       await adminApi.categories.update(cat.id, { name: newName.trim(), description: cat.description });
       load();
+      reloadCategories();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Не удалось обновить');
     }

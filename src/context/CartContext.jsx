@@ -30,13 +30,20 @@ export function CartProvider({ children }) {
     const fetchServer = async () => {
       setLoading(true);
       try {
+        // ВАЖНО: гостевую корзину льём на сервер только при свежем логине,
+        // а не при каждом рефреше — иначе очищенная админом корзина
+        // снова заполняется из устаревшего localStorage.
         const local = readLocal();
-        if (local.length) {
+        const alreadyMerged = sessionStorage.getItem('voltix-cart-merged') === '1';
+        if (local.length && !alreadyMerged) {
           for (const it of local) {
             try { await cartApi.addItem(it.id, it.qty); } catch {}
           }
-          writeLocal([]);
+          sessionStorage.setItem('voltix-cart-merged', '1');
         }
+        // В любом случае чистим гостевую корзину для авторизованного — её больше быть не должно.
+        writeLocal([]);
+
         const server = await cartApi.get();
         if (!alive) return;
         setCart(server.items);
@@ -47,8 +54,14 @@ export function CartProvider({ children }) {
       }
     };
 
-    if (isAuthenticated) fetchServer();
-    else                 setCart(readLocal());
+    if (isAuthenticated) {
+      fetchServer();
+    } else {
+      // Гость: сбрасываем флаг merge — при следующем логине гостевая корзина
+      // снова мигрирует на сервер.
+      sessionStorage.removeItem('voltix-cart-merged');
+      setCart(readLocal());
+    }
 
     return () => { alive = false; };
   }, [isAuthenticated]);
@@ -121,9 +134,20 @@ export function CartProvider({ children }) {
   }, [isAuthenticated, removeFromCart]);
 
   const clearCart = useCallback(async () => {
+    // 1) Сразу чистим локальный state и localStorage — даже для авторизованного,
+    //    чтобы при рефреше fetchServer не считал, что есть гостевая корзина.
     setCart([]);
+    writeLocal([]);
+    // 2) Если есть сессия — дожидаемся ответа сервера, чтобы не было рассинхрона.
     if (isAuthenticated) {
-      try { await cartApi.clear(); } catch {}
+      try { await cartApi.clear(); } catch (err) {
+        // если упало — подтянем актуальное состояние с сервера
+        try {
+          const server = await cartApi.get();
+          setCart(server.items);
+        } catch {}
+        setError(err?.message || 'Не удалось очистить корзину');
+      }
     }
   }, [isAuthenticated]);
 
