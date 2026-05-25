@@ -9,7 +9,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-import { cartApi, ApiError } from '../api';
+import { cartApi, productsApi, ApiError } from '../api';
 
 const CartContext = createContext();
 const STORAGE_KEY = 'voltix-cart';
@@ -29,6 +29,39 @@ export function CartProvider({ children }) {
   const [cart, setCart]   = useState(() => (isAuthenticated ? [] : readLocal()));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [removingIds, setRemovingIds] = useState(new Set()); // для индикации удаления конкретного товара
+
+  // Кэш загруженных фото и категорий товара (бэк cart-item-response их не возвращает).
+  const productCache = useRef(new Map());
+
+  // Догружаем недостающие фото/категории для items.
+  const enrichItems = useCallback(async (items) => {
+    if (!items?.length) return items;
+    const out = [...items];
+    for (let i = 0; i < out.length; i++) {
+      const it = out[i];
+      if (it.imageUrl || it.category !== 'all') continue;
+      const cached = productCache.current.get(it.id);
+      if (cached) {
+        out[i] = { ...it, imageUrl: cached.imageUrl, category: cached.category };
+        continue;
+      }
+      try {
+        const p = await productsApi.byId(it.id);
+        if (p) {
+          productCache.current.set(it.id, { imageUrl: p.imageUrl, category: p.category });
+          out[i] = { ...it, imageUrl: p.imageUrl, category: p.category };
+        }
+      } catch { /* пропускаем */ }
+    }
+    return out;
+  }, []);
+
+  // Обёртка над setCart — параллельно догружает фото.
+  const setCartEnriched = useCallback((items) => {
+    setCart(items);
+    enrichItems(items).then(enriched => setCart(enriched));
+  }, [enrichItems]);
 
   // Отслеживаем предыдущее состояние isAuthenticated.
   // Свежим логином считаем переход false → true внутри одной сессии React.
@@ -67,7 +100,7 @@ export function CartProvider({ children }) {
 
         const server = await cartApi.get();
         if (!alive) return;
-        setCart(server.items);
+        setCartEnriched(server.items);
       } catch (err) {
         if (alive) setError(err?.message || null);
       } finally {
@@ -87,15 +120,26 @@ export function CartProvider({ children }) {
   const removeFromCart = useCallback(async (id) => {
     if (!isAuthenticated) {
       setCart(prev => prev.filter(item => item.id !== id));
+      toast?.info?.('Товар удалён из корзины');
       return;
     }
+    setRemovingIds(prev => new Set(prev).add(id));
     try {
       const res = await cartApi.removeItem(id);
-      setCart(res.items);
+      setCartEnriched(res.items);
+      toast?.info?.('Товар удалён из корзины');
     } catch (err) {
-      setError(err?.message || 'Не удалось удалить');
+      const msg = err?.message || 'Не удалось удалить';
+      setError(msg);
+      toast?.error?.(msg);
+    } finally {
+      setRemovingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, toast, setCartEnriched]);
 
   const addToCart = useCallback(async (product, qty = 1) => {
     setError(null);
@@ -121,7 +165,7 @@ export function CartProvider({ children }) {
     }
     try {
       const res = await cartApi.addItem(product.id, qty);
-      setCart(res.items);
+      setCartEnriched(res.items);
       toast?.success?.('Товар добавлен в корзину');
     } catch (err) {
       if (err instanceof ApiError) {
@@ -141,27 +185,33 @@ export function CartProvider({ children }) {
     }
     try {
       const res = await cartApi.setQty(id, qty);
-      setCart(res.items);
+      setCartEnriched(res.items);
     } catch (err) {
-      setError(err?.message || 'Не удалось изменить количество');
+      const msg = err?.message || 'Не удалось изменить количество';
+      setError(msg);
+      toast?.error?.(msg);
     }
-  }, [isAuthenticated, removeFromCart]);
+  }, [isAuthenticated, removeFromCart, toast, setCartEnriched]);
 
   const clearCart = useCallback(async () => {
     setCart([]);
     writeLocal([]); // даже для авторизованного — чтобы F5 не «воскресил»
     if (isAuthenticated) {
-      try { await cartApi.clear(); }
-      catch (err) {
+      try {
+        await cartApi.clear();
+        toast?.success?.('Корзина очищена');
+      } catch (err) {
         // если сервер не очистил — подтягиваем серверное состояние, чтобы не было ложного UI
         try {
           const server = await cartApi.get();
-          setCart(server.items);
+          setCartEnriched(server.items);
         } catch {}
-        setError(err?.message || 'Не удалось очистить корзину');
+        const msg = err?.message || 'Не удалось очистить корзину';
+        setError(msg);
+        toast?.error?.(msg);
       }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, toast, setCartEnriched]);
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -170,6 +220,7 @@ export function CartProvider({ children }) {
     <CartContext.Provider value={{
       cart, addToCart, removeFromCart, updateQty, clearCart,
       cartCount, cartTotal, loading, error,
+      isRemoving: (id) => removingIds.has(id),
     }}>
       {children}
     </CartContext.Provider>

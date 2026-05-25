@@ -89,25 +89,29 @@ export function adaptProductList(page) {
   };
 }
 
+// CartResponse → фронт-корзина.
+// CartItemResponse v6: { id, productId, productName, productSku,
+//                        unitPrice, quantity, lineTotal, stockQuantity }
+// imageUrl / categoryName бэк здесь НЕ возвращает — фронт догружает их через productsApi.byId.
 export function adaptCart(dto) {
   if (!dto) return { items: [], total: 0 };
-  const items = (dto.items || []).map(it => {
-    const slug = categorySlugByBackendName(it.categoryName);
-    return {
-      id:         it.productId,
-      cartItemId: it.id,
-      name:       it.productName,
-      sku:        it.productSku,
-      price:      Number(it.price ?? it.priceAtAdd ?? 0),
-      qty:        it.quantity,
-      image:      ICON_BY_CAT[slug] || '⚡',
-      imageUrl:   normalizeImageUrl(it.imageUrl),
-    };
-  });
-  return {
-    items,
-    total: items.reduce((s, x) => s + x.price * x.qty, 0),
-  };
+  const items = (dto.items || []).map(it => ({
+    id:         it.productId,
+    cartItemId: it.id,
+    name:       it.productName,
+    sku:        it.productSku,
+    price:      Number(it.unitPrice ?? it.price ?? 0),
+    lineTotal:  Number(it.lineTotal ?? 0),
+    qty:        it.quantity,
+    stock:      it.stockQuantity ?? null,
+    image:      '⚡',         // fallback — будет заменено когда дойдёт byId
+    imageUrl:   null,
+    category:   'all',
+  }));
+  const total = typeof dto.total === 'number'
+    ? Number(dto.total)
+    : items.reduce((s, x) => s + (x.lineTotal || x.price * x.qty), 0);
+  return { items, total };
 }
 
 export function adaptOrder(dto) {

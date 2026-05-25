@@ -7,7 +7,7 @@ import ProductImage from '../components/ProductImage';
 import '../styles/cart.css';
 
 export default function CartPage() {
-  const { cart, updateQty, removeFromCart, cartTotal, cartCount, clearCart, loading, error } = useCart();
+  const { cart, updateQty, removeFromCart, cartTotal, cartCount, clearCart, loading, error, isRemoving } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -73,12 +73,21 @@ export default function CartPage() {
                   {item.shortDesc && <p className="cart-item-desc">{item.shortDesc}</p>}
                 </div>
                 <div className="cart-item-qty">
-                  <button onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
+                  <button onClick={() => updateQty(item.id, item.qty - 1)} disabled={isRemoving?.(item.id)}>−</button>
                   <span>{item.qty}</span>
-                  <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+                  <button onClick={() => updateQty(item.id, item.qty + 1)} disabled={isRemoving?.(item.id)}>+</button>
                 </div>
-                <div className="cart-item-price">{formatPrice(item.price * item.qty)}</div>
-                <button className="cart-item-remove" onClick={() => removeFromCart(item.id)}>✕</button>
+                <div className="cart-item-price">
+                  {formatPrice(item.lineTotal || item.price * item.qty)}
+                </div>
+                <button
+                  className="cart-item-remove"
+                  onClick={() => removeFromCart(item.id)}
+                  disabled={isRemoving?.(item.id)}
+                  title="Удалить из корзины"
+                >
+                  {isRemoving?.(item.id) ? '…' : '✕'}
+                </button>
               </div>
             ))}
           </div>

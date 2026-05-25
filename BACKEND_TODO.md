@@ -215,6 +215,52 @@ localStorage в `clearCart`). От бэка нужно только:
 
 ---
 
+---
+
+## 🚨 КРИТИЧНЫЕ БАГИ КОРЗИНЫ (по жалобам пользователя)
+
+### Симптомы
+1. **«Нажать на крестик — ничего не происходит»** — товар не удаляется из корзины админа.
+2. **«Очистить корзину» — пропали в UI, но при F5 возвращаются** — DELETE /api/cart висит в `pending` (видно в DevTools Network).
+
+### Что нужно проверить на бэке
+
+#### А. CartItemResponse — расширить поля
+Сейчас:
+```java
+public class CartItemResponse {
+  Long id; Long productId; String productName; String productSku;
+  BigDecimal unitPrice; Integer quantity; BigDecimal lineTotal; Integer stockQuantity;
+}
+```
+**Добавить**:
+- `String imageUrl` — главное фото товара (фронт сейчас делает отдельный `productsApi.byId()` для каждого item — медленно)
+- `String categoryName` / `Long categoryId` — для отображения категории/иконки
+
+#### Б. DELETE /api/cart висит в pending
+На последнем скриншоте `cart` (DELETE) в статусе `(pending)`. Фронт ждёт, бэк не отвечает. Скорее всего:
+1. **Race condition / dead lock** в `cartService.clear()` — возможно `@Transactional` цепляется за другую сессию.
+2. **Принципиально другая ошибка** — например, попытка удалить из корзины, которая ссылается на soft-deleted товар (`isActive=false`).
+3. **N+1 lazy fetch** на 100+ записях — клиент таймаутит.
+
+Проверить логи `voltix-backend` в момент клика «Очистить». Если нет даже `INFO Clearing cart for user X` — значит запрос не дошёл до контроллера (фильтры безопасности зависли).
+
+#### В. DELETE /api/cart/items/{productId}
+**По спецификации**: `DELETE /api/cart/items/{productId}` → возвращает `CartResponse` (200) с обновлённой корзиной.
+
+Если на бэке этот метод тоже падает или ничего не делает — отсюда «нажал крестик, ничего не происходит». Проверить:
+- `CartService.removeItem(username, productId)` — реально ли коммитит транзакцию
+- Возвращает ли он свежий `CartResponse` (а не закэшированный)
+- Аналогичная проверка для soft-deleted товара
+
+#### Г. Фронт-фиксы (уже применены)
+- В адаптере читается `unitPrice` (не `price`) → цены больше не «0 ₽»
+- На кнопках удаления показывается loading-индикатор
+- При ошибке корзины — выпадает тост (раньше ошибки молча проглатывались)
+- Фото товара корзины дозагружается через `productsApi.byId` и кешируется
+
+---
+
 ## Приоритеты
 
 **P0 (без этого фича не работает):**
