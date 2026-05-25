@@ -112,6 +112,47 @@
 /* ===========================
    ЧИПЫ КАТЕГОРИЙ
    =========================== */
+/* Контейнер со стрелками */
+.scroll-chips {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.scroll-chips-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 4px 8px;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  flex: 1;
+}
+.scroll-chips-track::-webkit-scrollbar { display: none; }
+
+.scroll-chips-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s;
+  margin: 0 4px;
+  z-index: 2;
+}
+.scroll-chips-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Legacy: для случаев где остался .category-bar без обёртки */
 .category-bar {
   display: flex;
   gap: 8px;

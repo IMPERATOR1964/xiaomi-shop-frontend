@@ -59,8 +59,56 @@ const formatDate = (iso) => {
 };
 
 export default function ProductReviews({ productId }) {
-  const { loadReviews, addReview, getReviews, getAverageRating, getReviewsCount } = useReviews();
-  const { isAuthenticated } = useAuth();
+  const { loadReviews, addReview, updateReview, removeReview,
+          getReviews, getAverageRating, getReviewsCount } = useReviews();
+  const { isAuthenticated, user } = useAuth();
+
+  // Идентификация «своего» отзыва — по username (надёжнее чем userId, не все DTO его отдают).
+  const isOwnReview = (r) => {
+    if (!user) return false;
+    if (r.userId && user.id && r.userId === user.id) return true;
+    if (r.username && user.username && r.username === user.username) return true;
+    return false;
+  };
+
+  // ID отзыва который сейчас редактируется. Когда не null — показываем форму редактирования вместо просмотра.
+  const [editingId, setEditingId] = useState(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editTitle, setEditTitle] = useState('');
+  const [editText, setEditText] = useState('');
+  const [editBusy, setEditBusy] = useState(false);
+
+  const startEdit = (r) => {
+    setEditingId(r.id);
+    setEditRating(r.rating);
+    setEditTitle(r.title || '');
+    setEditText(r.text || '');
+  };
+  const cancelEdit = () => { setEditingId(null); };
+  const saveEdit = async (r) => {
+    setEditBusy(true);
+    try {
+      await updateReview(productId, r.id, {
+        rating: editRating,
+        title: editTitle,
+        comment: editText,
+        photos: r.photos, // фото пока не редактируем
+      });
+      setEditingId(null);
+    } catch (e) {
+      alert(e?.message || 'Не удалось сохранить');
+    } finally {
+      setEditBusy(false);
+    }
+  };
+  const deleteOne = async (r) => {
+    if (!confirm('Удалить ваш отзыв?')) return;
+    try {
+      await removeReview(productId, r.id);
+    } catch (e) {
+      alert(e?.message || 'Не удалось удалить');
+    }
+  };
 
   const reviews = getReviews(productId);
   const avg     = getAverageRating(productId);
@@ -234,31 +282,77 @@ export default function ProductReviews({ productId }) {
 
       {reviews.length > 0 && (
         <div className="reviews-list">
-          {reviews.map(r => (
-            <div key={r.id} className="review-item">
-              <div className="review-item-head">
-                <div className="review-author">
-                  <div className="review-avatar">{(r.author || 'U').charAt(0).toUpperCase()}</div>
-                  <div>
-                    <div className="review-author-name">{r.author}</div>
-                    <div className="review-date">{formatDate(r.date)}</div>
+          {reviews.map(r => {
+            const own = isOwnReview(r);
+            const isEditing = editingId === r.id;
+            return (
+              <div key={r.id} className="review-item">
+                <div className="review-item-head">
+                  <div className="review-author">
+                    <div className="review-avatar">{(r.author || 'U').charAt(0).toUpperCase()}</div>
+                    <div>
+                      <div className="review-author-name">
+                        {r.author}
+                        {own && <span className="review-own-badge">вы</span>}
+                      </div>
+                      <div className="review-date">{formatDate(r.date)}</div>
+                    </div>
                   </div>
+                  {isEditing
+                    ? <StarRating value={editRating} onChange={setEditRating} />
+                    : <StarRating value={r.rating} readonly />
+                  }
                 </div>
-                <StarRating value={r.rating} readonly />
+
+                {isEditing ? (
+                  <>
+                    <input
+                      className="review-edit-input"
+                      type="text"
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      placeholder="Заголовок"
+                      maxLength={255}
+                    />
+                    <textarea
+                      className="review-edit-input"
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                      placeholder="Комментарий"
+                      rows={4}
+                      maxLength={5000}
+                    />
+                    <div className="review-edit-actions">
+                      <button type="button" className="btn-primary btn-sm" disabled={editBusy} onClick={() => saveEdit(r)}>
+                        {editBusy ? 'Сохраняем…' : 'Сохранить'}
+                      </button>
+                      <button type="button" className="btn-outline btn-sm" onClick={cancelEdit}>Отмена</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {r.title && <div style={{ fontWeight: 700, marginBottom: 6 }}>{r.title}</div>}
+                    {r.text  && <p className="review-text">{r.text}</p>}
+                    {Array.isArray(r.photos) && r.photos.length > 0 && (
+                      <div className="review-photos-view">
+                        {r.photos.map((src, i) => (
+                          <a key={i} href={src} target="_blank" rel="noreferrer" className="review-photo-view">
+                            <img src={src} alt={`Фото ${i + 1}`} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {own && (
+                      <div className="review-own-actions">
+                        <button type="button" className="review-own-btn" onClick={() => startEdit(r)}>Изменить</button>
+                        <button type="button" className="review-own-btn review-own-btn-danger" onClick={() => deleteOne(r)}>Удалить</button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-              {r.title && <div style={{ fontWeight: 700, marginBottom: 6 }}>{r.title}</div>}
-              {r.text && <p className="review-text">{r.text}</p>}
-              {Array.isArray(r.photos) && r.photos.length > 0 && (
-                <div className="review-photos-view">
-                  {r.photos.map((src, i) => (
-                    <a key={i} href={src} target="_blank" rel="noreferrer" className="review-photo-view">
-                      <img src={src} alt={`Фото ${i + 1}`} />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

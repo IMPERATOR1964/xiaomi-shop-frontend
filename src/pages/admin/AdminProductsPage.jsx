@@ -32,29 +32,53 @@ export default function AdminProductsPage() {
     setError(null);
 
     const q = debouncedQuery.trim();
-    // Если введён поиск — берём /products/search (надёжнее FTS на бэке).
-    // Если только категория/без поиска — /products/filter с sortBy.
-    const request = q
-      ? productsApi.search(q, { page, size: 20 })
-      : productsApi.filter(
-          {
-            sortBy: 'newest',
-            ...(categoryId ? { categoryId: Number(categoryId) } : {}),
-          },
-          { page, size: 20 },
-        );
 
-    request
+    // Если запрос — 7 цифр, это похоже на SKU. Пробуем найти товар напрямую.
+    const isSkuQuery = /^\d{7}$/.test(q);
+
+    const buildResults = async () => {
+      // База поиска
+      let baseRes = q
+        ? await productsApi.search(q, { page, size: 20 })
+        : await productsApi.filter(
+            {
+              sortBy: 'newest',
+              ...(categoryId ? { categoryId: Number(categoryId) } : {}),
+            },
+            { page, size: 20 },
+          );
+
+      // Если это похоже на SKU, доберём через bySku и поставим в начало (если ещё нет).
+      if (isSkuQuery) {
+        try {
+          const skuProduct = await productsApi.bySku(q);
+          if (skuProduct) {
+            const exists = baseRes.items.find(p => p.id === skuProduct.id);
+            if (!exists) {
+              baseRes = {
+                ...baseRes,
+                items: [skuProduct, ...baseRes.items],
+                total: baseRes.total + 1,
+              };
+            }
+          }
+        } catch { /* SKU не нашёлся — ok */ }
+      }
+
+      // Если есть и поиск, и категория — пост-фильтрация по фронт-slug.
+      let list = baseRes.items;
+      if (q && categoryId) {
+        const cat = CATEGORIES.find(c => c.backendId === Number(categoryId));
+        if (cat) list = list.filter(p => p.category === cat.id);
+      }
+      return { ...baseRes, items: list };
+    };
+
+    buildResults()
       .then(res => {
-        // Если есть и поиск, и категория — пост-фильтрация на фронте.
-        let list = res.items;
-        if (q && categoryId) {
-          const cat = CATEGORIES.find(c => c.backendId === Number(categoryId));
-          if (cat) list = list.filter(p => p.category === cat.id);
-        }
-        setItems(list);
+        setItems(res.items);
         setPages(res.pages);
-        setTotal(q && categoryId ? list.length : res.total);
+        setTotal(res.items.length === res.total ? res.total : res.items.length);
       })
       .catch(err => setError(err?.message || 'Не удалось загрузить'))
       .finally(() => setLoading(false));

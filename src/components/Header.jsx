@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCompare } from '../context/CompareContext';
 import { useLocation as useCity, CITIES } from '../context/LocationContext';
+import { productsApi } from '../api';
 import '../styles/header.css';
 
 export default function Header() {
@@ -40,11 +41,22 @@ export default function Header() {
     return routerLoc.pathname === path;
   };
 
-  const submitSearch = (e) => {
+  const submitSearch = async (e) => {
     e.preventDefault();
     const q = searchValue.trim();
-    if (q) navigate(`/catalog?q=${encodeURIComponent(q)}`);
-    else navigate('/catalog');
+    if (!q) return navigate('/catalog');
+
+    // Если введены ровно 7 цифр — это артикул, ведём прямо на товар.
+    if (/^\d{7}$/.test(q)) {
+      try {
+        const product = await productsApi.bySku(q);
+        if (product?.id) {
+          navigate(`/product/${product.id}`);
+          return;
+        }
+      } catch { /* fallthrough */ }
+    }
+    navigate(`/catalog?q=${encodeURIComponent(q)}`);
   };
 
   return (

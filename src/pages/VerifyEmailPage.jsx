@@ -10,13 +10,6 @@ import '../styles/auth.css';
 const CODE_LENGTH = 5;
 const CODE_REGEX  = /^\d{5}$/;
 
-// Высчитывает сколько секунд осталось до момента ISO-времени.
-function secondsLeft(iso) {
-  if (!iso) return 0;
-  const ms = new Date(iso).getTime() - Date.now();
-  return Math.max(0, Math.floor(ms / 1000));
-}
-
 // Форматирует секунды как «12:34».
 function fmtClock(sec) {
   if (sec <= 0) return '0:00';
@@ -35,21 +28,52 @@ function fmtVerbose(sec) {
   return `${sec} сек`;
 }
 
+// Парсит ISO-строку как UTC (даже если в ней нет Z/+00:00).
+// Используется как fallback, если бэк не дал seconds_until_*.
+function isoUtcToMillis(iso) {
+  if (!iso) return 0;
+  // если в строке уже есть индикатор зоны — оставляем как есть
+  const hasTz = /[zZ]|[+\-]\d{2}:?\d{2}$/.test(iso);
+  return new Date(hasTz ? iso : iso + 'Z').getTime();
+}
+
+// Берёт seconds_until_* (число) от бэка приоритетно. Если только ISO без TZ — парсим как UTC.
+function pickSeconds(secsField, isoField, now) {
+  if (typeof secsField === 'number') return Math.max(0, Math.floor(secsField));
+  if (typeof isoField === 'string') {
+    const ms = isoUtcToMillis(isoField) - now;
+    return Math.max(0, Math.floor(ms / 1000));
+  }
+  return 0;
+}
+
 export default function VerifyEmailPage() {
   const routerLoc = useLocation();
   const navigate = useNavigate();
   const { verifyEmail, resendVerification, verificationStatus } = useAuth();
   const { toast } = useToast();
 
-  // Email: state из RegisterPage → fallback на localStorage.
   const initialEmail = routerLoc.state?.email || pendingVerify.get() || '';
 
-  // Дедлайны: из state RegisterPage или из ответа /verification-status.
-  const [email, setEmail]            = useState(initialEmail);
-  const [requiredUntil, setReqUntil] = useState(routerLoc.state?.verificationRequiredUntil  || null);
-  const [codeUntil,     setCodeUntil] = useState(routerLoc.state?.verificationCodeValidUntil || null);
-  const [secondsToDelete, setSecondsToDelete] = useState(0);
-  const [secondsToCode,   setSecondsToCode]   = useState(0);
+  const [email, setEmail] = useState(initialEmail);
+
+  // Дедлайны храним как АБСОЛЮТНЫЕ timestamp'ы (ms from epoch),
+  // вычисленные на основе seconds_until_* + Date.now() в момент получения.
+  // Это полностью устраняет проблему таймзон.
+  const [deadlineDeleteMs, setDeadlineDeleteMs] = useState(null);
+  const [deadlineCodeMs,   setDeadlineCodeMs]   = useState(null);
+
+  // Тикалка пересчитывает каждую секунду
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const now = Date.now();
+  const secondsToDelete = deadlineDeleteMs ? Math.max(0, Math.floor((deadlineDeleteMs - now) / 1000)) : 0;
+  const secondsToCode   = deadlineCodeMs   ? Math.max(0, Math.floor((deadlineCodeMs   - now) / 1000)) : 0;
+
   const [canResend, setCanResend] = useState(true);
   const [serverMsg, setServerMsg] = useState('');
 
@@ -58,59 +82,73 @@ export default function VerifyEmailPage() {
   const [error,   setError]   = useState('');
   const [success, setSuccess] = useState('');
 
-  // ===== Запрос /verification-status =====
+  // Применяет дедлайны из ответа бэка (либо AuthResponse, либо VerificationStatusResponse).
+  // Приоритет: seconds_until_* (snake_case или camelCase) → ISO с UTC fallback.
+  const applyDeadlines = (data) => {
+    if (!data) return;
+    const nowMs = Date.now();
+
+    const secDel = data.secondsUntilDeletion ?? data.seconds_until_deletion;
+    const secCode = data.secondsUntilCodeExpires ?? data.seconds_until_code_expires;
+    const isoDel  = data.verificationRequiredUntil  ?? data.verification_required_until;
+    const isoCode = data.verificationCodeValidUntil ?? data.verification_code_valid_until;
+
+    const sDel = pickSeconds(secDel, isoDel, nowMs);
+    const sCode = pickSeconds(secCode, isoCode, nowMs);
+
+    if (sDel > 0)  setDeadlineDeleteMs(nowMs + sDel * 1000);
+    else if (secDel != null || isoDel) setDeadlineDeleteMs(0); // явно «истекло»
+
+    if (sCode > 0) setDeadlineCodeMs(nowMs + sCode * 1000);
+    else if (secCode != null || isoCode) setDeadlineCodeMs(0);
+
+    if (typeof data.canResend === 'boolean')        setCanResend(data.canResend);
+    if (typeof data.can_resend === 'boolean')        setCanResend(data.can_resend);
+    if (data.message) setServerMsg(data.message);
+  };
+
+  // При первом монтаже применяем дедлайны из state RegisterPage (если есть)
+  useEffect(() => {
+    if (routerLoc.state) applyDeadlines(routerLoc.state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Опрос /verification-status
   const lastStatusFetch = useRef(0);
-  const STATUS_THROTTLE_MS = 5_000; // rate-limit на бэке 20/min/IP
+  const STATUS_THROTTLE_MS = 5_000;
 
   const fetchStatus = async (silent = false) => {
     if (!email.trim()) return;
-    const now = Date.now();
-    if (silent && now - lastStatusFetch.current < STATUS_THROTTLE_MS) return;
-    lastStatusFetch.current = now;
+    const t = Date.now();
+    if (silent && t - lastStatusFetch.current < STATUS_THROTTLE_MS) return;
+    lastStatusFetch.current = t;
     try {
       const s = await verificationStatus(email.trim());
-      if (s?.emailVerified) {
+      if (s?.emailVerified || s?.email_verified) {
         setSuccess('Email уже подтверждён');
         pendingVerify.clear();
         setTimeout(() => navigate('/login'), 1500);
         return;
       }
-      if (s?.verificationRequiredUntil)  setReqUntil(s.verificationRequiredUntil);
-      if (s?.verificationCodeValidUntil) setCodeUntil(s.verificationCodeValidUntil);
-      if (typeof s?.secondsUntilDeletion === 'number')    setSecondsToDelete(s.secondsUntilDeletion);
-      if (typeof s?.secondsUntilCodeExpires === 'number') setSecondsToCode(s.secondsUntilCodeExpires);
-      if (typeof s?.canResend === 'boolean')              setCanResend(s.canResend);
-      if (s?.message) setServerMsg(s.message);
+      applyDeadlines(s);
     } catch {
-      // ignore — продолжаем по локальным таймерам
+      // ignore
     }
   };
 
-  // Первоначальная подгрузка статуса
   useEffect(() => {
     if (email) fetchStatus(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Тикалка таймеров каждую секунду на основе ISO-дедлайнов
+  // Автоматический resend разрешён когда код истёк
   useEffect(() => {
-    const tick = () => {
-      setSecondsToDelete(requiredUntil ? secondsLeft(requiredUntil) : 0);
-      setSecondsToCode(codeUntil ? secondsLeft(codeUntil) : 0);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [requiredUntil, codeUntil]);
+    if (deadlineCodeMs != null && secondsToCode === 0) setCanResend(true);
+  }, [secondsToCode, deadlineCodeMs]);
 
-  // Когда код истёк — resend становится доступен.
-  useEffect(() => {
-    if (codeUntil && secondsToCode === 0) setCanResend(true);
-  }, [secondsToCode, codeUntil]);
+  const deletionExpired = deadlineDeleteMs !== null && secondsToDelete === 0;
+  const codeExpired     = deadlineCodeMs   !== null && secondsToCode === 0;
 
-  const deletionExpired = !!requiredUntil && secondsToDelete === 0;
-
-  // ===== Сабмит =====
   const submit = async (codeValue) => {
     const value = (codeValue ?? code).trim();
     if (!email.trim()) {
@@ -139,9 +177,9 @@ export default function VerifyEmailPage() {
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 404)        setError('Запрос на подтверждение не найден. Зарегистрируйтесь заново.');
-        else if (err.status === 409)   setError('Код истёк или заблокирован. Запросите новый.');
-        else                            setError(err.message);
+        if (err.status === 404)      setError('Запрос на подтверждение не найден. Зарегистрируйтесь заново.');
+        else if (err.status === 409) setError('Код истёк или заблокирован. Запросите новый.');
+        else                          setError(err.message);
       } else {
         setError('Не удалось проверить код. Попробуйте позже.');
       }
@@ -151,7 +189,6 @@ export default function VerifyEmailPage() {
     }
   };
 
-  // ===== Resend =====
   const handleResend = async () => {
     const trimmed = email.trim();
     if (!trimmed) { toast?.error?.('Укажите email'); return; }
@@ -179,7 +216,6 @@ export default function VerifyEmailPage() {
     }
   };
 
-  // ===== Если регистрация уже истекла — отдельный экран =====
   if (deletionExpired) {
     return (
       <div className="auth-page">
@@ -199,8 +235,6 @@ export default function VerifyEmailPage() {
     );
   }
 
-  const codeExpired = !!codeUntil && secondsToCode === 0;
-
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -215,15 +249,15 @@ export default function VerifyEmailPage() {
           <div className="auth-info">{serverMsg}</div>
         )}
 
-        {(requiredUntil || codeUntil) && !success && (
+        {(deadlineDeleteMs !== null || deadlineCodeMs !== null) && !success && (
           <div className="auth-timers">
-            {requiredUntil && (
+            {deadlineDeleteMs !== null && (
               <div className="auth-timer">
                 <span className="auth-timer-label">До удаления аккаунта</span>
                 <span className="auth-timer-value">{fmtVerbose(secondsToDelete)}</span>
               </div>
             )}
-            {codeUntil && !codeExpired && (
+            {deadlineCodeMs !== null && !codeExpired && (
               <div className="auth-timer">
                 <span className="auth-timer-label">Код истечёт через</span>
                 <span className="auth-timer-value auth-timer-code">{fmtClock(secondsToCode)}</span>

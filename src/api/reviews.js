@@ -26,11 +26,17 @@ export const reviewsApi = {
   summary: async (productId) =>
     get(`/products/${productId}/reviews/summary`, { auth: false }),
 
-  create: async (productId, { rating, title, comment }) =>
-    adaptReview(await post(`/products/${productId}/reviews`, { rating, title, comment })),
+  create: async (productId, { rating, title, comment, photos }) => {
+    const body = { rating, title, comment };
+    if (Array.isArray(photos) && photos.length) body.photos = photos;
+    return adaptReview(await post(`/products/${productId}/reviews`, body));
+  },
 
-  update: async (reviewId, { rating, title, comment }) =>
-    adaptReview(await put(`/reviews/${reviewId}`, { rating, title, comment })),
+  update: async (reviewId, { rating, title, comment, photos }) => {
+    const body = { rating, title, comment };
+    if (Array.isArray(photos)) body.photos = photos;
+    return adaptReview(await put(`/reviews/${reviewId}`, body));
+  },
 
   remove: (reviewId) => del(`/reviews/${reviewId}`),
 

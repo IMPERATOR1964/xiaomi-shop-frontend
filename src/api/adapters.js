@@ -133,16 +133,17 @@ export function adaptOrder(dto) {
 export function adaptReview(dto) {
   if (!dto) return null;
   return {
-    id:      dto.id,
-    rating:  dto.rating,
-    title:   dto.title || '',
-    text:    dto.comment || '',
-    pros:    '',
-    cons:    '',
-    author:  dto.username || dto.userName || 'Пользователь',
-    date:    dto.createdAt,
-    // Бэк v6 возвращает фото отзыва как массив URL'ов
-    photos:  Array.isArray(dto.photos)
+    id:       dto.id,
+    rating:   dto.rating,
+    title:    dto.title || '',
+    text:     dto.comment || '',
+    pros:     '',
+    cons:     '',
+    author:   dto.username || dto.userName || 'Пользователь',
+    username: dto.username || dto.userName || '',  // для сравнения со своим
+    userId:   dto.userId ?? null,
+    date:     dto.createdAt,
+    photos:   Array.isArray(dto.photos)
       ? dto.photos.map(normalizeImageUrl).filter(Boolean)
       : [],
   };

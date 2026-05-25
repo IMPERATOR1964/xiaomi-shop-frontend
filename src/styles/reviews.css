@@ -268,3 +268,62 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* === Edit/delete свои отзывы === */
+.review-own-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 100px;
+}
+
+.review-own-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.review-own-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.review-own-btn:hover { background: var(--accent-light); }
+
+.review-own-btn-danger { color: var(--danger); }
+.review-own-btn-danger:hover { background: rgba(229, 57, 53, 0.08); }
+
+.review-edit-input {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 8px;
+}
+.review-edit-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.review-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}

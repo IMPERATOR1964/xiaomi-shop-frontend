@@ -4,6 +4,7 @@ import ProductCard from '../components/ProductCard';
 import CategoryCard from '../components/CategoryCard';
 import CategoryIcon from '../components/CategoryIcon';
 import CatalogFilter from '../components/CatalogFilter';
+import ScrollableChips from '../components/ScrollableChips';
 import { ErrorState, EmptyState, ProductCardSkeleton } from '../components/UiStates';
 import { FILTER_CONFIG } from '../data/products';
 import { useCategories } from '../context/CategoriesContext';
@@ -146,7 +147,7 @@ export default function CatalogPage() {
           {searchQuery ? `Результаты поиска: «${searchQuery}»` : (activeCat?.label || 'Каталог')}
         </h1>
 
-        <div className="category-bar">
+        <ScrollableChips>
           {CATEGORIES.map(cat => (
             <button
               key={cat.id}
@@ -157,7 +158,7 @@ export default function CatalogPage() {
               <span>{cat.label}</span>
             </button>
           ))}
-        </div>
+        </ScrollableChips>
 
         <div className="catalog-body">
           {!isMain && (

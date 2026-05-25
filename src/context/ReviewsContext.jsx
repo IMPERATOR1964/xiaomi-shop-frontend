@@ -26,8 +26,8 @@ export function ReviewsProvider({ children }) {
     return res.items;
   }, []);
 
-  const addReview = useCallback(async (productId, { rating, title, comment }) => {
-    const created = await reviewsApi.create(productId, { rating, title, comment });
+  const addReview = useCallback(async (productId, { rating, title, comment, photos }) => {
+    const created = await reviewsApi.create(productId, { rating, title, comment, photos });
     setByProduct(prev => {
       const cur = prev[productId] || { items: [], total: 0, avg: 0 };
       const items = [created, ...cur.items];
@@ -43,6 +43,41 @@ export function ReviewsProvider({ children }) {
     return created;
   }, []);
 
+  const updateReview = useCallback(async (productId, reviewId, { rating, title, comment, photos }) => {
+    const updated = await reviewsApi.update(reviewId, { rating, title, comment, photos });
+    setByProduct(prev => {
+      const cur = prev[productId];
+      if (!cur) return prev;
+      const items = cur.items.map(r => r.id === reviewId ? updated : r);
+      return {
+        ...prev,
+        [productId]: {
+          items,
+          total: cur.total,
+          avg:   items.reduce((s, r) => s + r.rating, 0) / (items.length || 1),
+        },
+      };
+    });
+    return updated;
+  }, []);
+
+  const removeReview = useCallback(async (productId, reviewId) => {
+    await reviewsApi.remove(reviewId);
+    setByProduct(prev => {
+      const cur = prev[productId];
+      if (!cur) return prev;
+      const items = cur.items.filter(r => r.id !== reviewId);
+      return {
+        ...prev,
+        [productId]: {
+          items,
+          total: Math.max(0, cur.total - 1),
+          avg:   items.length ? items.reduce((s, r) => s + r.rating, 0) / items.length : 0,
+        },
+      };
+    });
+  }, []);
+
   const getReviews       = useCallback((id) => byProduct[id]?.items || [], [byProduct]);
   const getAverageRating = useCallback((id) => byProduct[id]?.avg || 0, [byProduct]);
   const getReviewsCount  = useCallback((id) => byProduct[id]?.total ?? (byProduct[id]?.items?.length || 0), [byProduct]);
@@ -51,6 +86,8 @@ export function ReviewsProvider({ children }) {
     <ReviewsContext.Provider value={{
       loadReviews,
       addReview,
+      updateReview,
+      removeReview,
       getReviews,
       getAverageRating,
       getReviewsCount,
