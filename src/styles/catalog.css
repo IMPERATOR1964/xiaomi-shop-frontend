@@ -215,6 +215,12 @@
   align-items: start;
 }
 
+/* Когда фильтр не отображается (поиск без категории) —
+   контент занимает всю ширину, товары идут сеткой 3-4 в ряд. */
+.catalog-body.catalog-body-nofilter {
+  grid-template-columns: 1fr;
+}
+
 .catalog-content { min-width: 0; }
 
 .catalog-filter-mobile-btn {

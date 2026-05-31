@@ -160,7 +160,7 @@ export default function CatalogPage() {
           ))}
         </ScrollableChips>
 
-        <div className="catalog-body">
+        <div className={`catalog-body ${isMain ? 'catalog-body-nofilter' : ''}`}>
           {!isMain && (
             <>
               <button

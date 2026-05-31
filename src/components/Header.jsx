@@ -7,6 +7,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useCompare } from '../context/CompareContext';
 import { useLocation as useCity, CITIES } from '../context/LocationContext';
 import { productsApi } from '../api';
+import SearchDropdown from './SearchDropdown';
 import '../styles/header.css';
 
 export default function Header() {
@@ -21,13 +22,29 @@ export default function Header() {
 
   const [cityOpen, setCityOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const cityRef = useRef(null);
+  const searchRef = useRef(null);
 
   // Закрытие селектора локации по клику вне
   useEffect(() => {
     const onDoc = (e) => { if (cityRef.current && !cityRef.current.contains(e.target)) setCityOpen(false); };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  // Закрытие поиска по клику вне
+  useEffect(() => {
+    const onDoc = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  // Escape — закрыть dropdown
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setSearchOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, []);
 
   // Считывание query из URL при заходе на каталог
@@ -44,6 +61,7 @@ export default function Header() {
   const submitSearch = async (e) => {
     e.preventDefault();
     const q = searchValue.trim();
+    setSearchOpen(false);
     if (!q) return navigate('/catalog');
 
     // Если введены ровно 7 цифр — это артикул, ведём прямо на товар.
@@ -57,6 +75,11 @@ export default function Header() {
       } catch { /* fallthrough */ }
     }
     navigate(`/catalog?q=${encodeURIComponent(q)}`);
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchValue('');
   };
 
   return (
@@ -101,25 +124,31 @@ export default function Header() {
         </div>
 
         {/* Поиск */}
-        <form className="header-search" onSubmit={submitSearch}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="7"/>
-            <path d="m21 21-4.3-4.3"/>
-          </svg>
-          <input
-            type="text"
-            value={searchValue}
-            onChange={e => setSearchValue(e.target.value)}
-            placeholder="Поиск товаров..."
-          />
-          {searchValue && (
-            <button
-              type="button"
-              className="header-search-clear"
-              onClick={() => { setSearchValue(''); navigate('/catalog'); }}
-            >×</button>
+        <div className="header-search-wrap" ref={searchRef}>
+          <form className="header-search" onSubmit={submitSearch}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input
+              type="text"
+              value={searchValue}
+              onChange={e => { setSearchValue(e.target.value); setSearchOpen(true); }}
+              onFocus={() => searchValue && setSearchOpen(true)}
+              placeholder="Поиск товаров..."
+            />
+            {searchValue && (
+              <button
+                type="button"
+                className="header-search-clear"
+                onClick={() => { setSearchValue(''); setSearchOpen(false); navigate('/catalog'); }}
+              >×</button>
+            )}
+          </form>
+          {searchOpen && (
+            <SearchDropdown query={searchValue} onSelect={closeSearch} />
           )}
-        </form>
+        </div>
 
         {/* Действия */}
         <div className="header-actions">
