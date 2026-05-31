@@ -261,6 +261,9 @@
   overflow: hidden;
   border: 1px solid var(--border-light);
   transition: transform 0.15s;
+  padding: 0;
+  background: var(--bg-input);
+  cursor: zoom-in;
 }
 .review-photo-view:hover { transform: scale(1.04); }
 .review-photo-view img {

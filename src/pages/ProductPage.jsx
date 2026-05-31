@@ -12,8 +12,10 @@ import RecentlyViewed from '../components/RecentlyViewed';
 import ProductReviews, { StarRating } from '../components/ProductReviews';
 import CategoryIcon from '../components/CategoryIcon';
 import ProductImage from '../components/ProductImage';
+import Lightbox from '../components/Lightbox';
 import { Loading } from '../components/UiStates';
 import { useHistory } from '../context/HistoryContext';
+import { useReviews } from '../context/ReviewsContext';
 import '../styles/product.css';
 
 export default function ProductPage() {
@@ -23,10 +25,12 @@ export default function ProductPage() {
   const { has: isFav, toggle: toggleFav } = useFavorites();
   const { has: isCmp, toggle: toggleCmp } = useCompare();
   const { track } = useHistory();
+  const { getReviews } = useReviews();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null); // null = закрыт
 
   useEffect(() => {
     if (!id) return;
@@ -65,6 +69,23 @@ export default function ProductPage() {
   const avg = product.averageRating || 0;
   const reviewsCount = product.reviewsCount || 0;
 
+  // Единая галерея: сначала фото товара, затем фото из всех отзывов.
+  const productImages = (product.imageUrls && product.imageUrls.length)
+    ? product.imageUrls
+    : (product.imageUrl ? [product.imageUrl] : []);
+  const reviewImages = getReviews(product.id).flatMap(r => r.photos || []);
+  const galleryImages = [...productImages, ...reviewImages];
+
+  // Открыть лайтбокс на фото товара (index в общем списке)
+  const openProductImage = () => {
+    if (productImages.length) setLightboxIndex(0);
+  };
+  // Открыть лайтбокс на конкретном фото отзыва (по URL находим его индекс в общем списке)
+  const openReviewPhoto = (url) => {
+    const i = galleryImages.indexOf(url);
+    setLightboxIndex(i >= 0 ? i : productImages.length);
+  };
+
   const handleAddToCart = () => {
     addToCart(product);
     navigate('/cart');
@@ -84,7 +105,11 @@ export default function ProductPage() {
         </div>
 
         <div className="product-detail">
-          <div className="product-detail-image">
+          <div
+            className="product-detail-image"
+            onClick={openProductImage}
+            style={{ cursor: productImages.length ? 'zoom-in' : 'default' }}
+          >
             <ProductImage
               src={product.imageUrl}
               alt={product.name}
@@ -93,6 +118,11 @@ export default function ProductPage() {
               imgClassName="product-detail-photo"
               className="product-detail-svg"
             />
+            {productImages.length > 1 && (
+              <span className="product-detail-photo-count">
+                {productImages.length} фото
+              </span>
+            )}
           </div>
 
           <div className="product-detail-info">
@@ -225,13 +255,21 @@ export default function ProductPage() {
         )}
 
         <section id="reviews" style={{ scrollMarginTop: 80 }}>
-          <ProductReviews productId={product.id} />
+          <ProductReviews productId={product.id} onPhotoClick={openReviewPhoto} />
         </section>
 
         <SimilarProducts productId={product.id} />
 
         <RecentlyViewed excludeId={product.id} />
       </div>
+
+      {lightboxIndex !== null && galleryImages.length > 0 && (
+        <Lightbox
+          images={galleryImages}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 }

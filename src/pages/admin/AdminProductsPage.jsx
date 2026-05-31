@@ -19,7 +19,7 @@ export default function AdminProductsPage() {
   const [query, setQuery]         = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [showInactive, setShowInactive] = useState(true);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Дебаунс поискового запроса: 350мс после последнего ввода — лонг-запрос пойдёт на сервер.
   useEffect(() => {
@@ -39,13 +39,13 @@ export default function AdminProductsPage() {
     const buildResults = async () => {
       // База поиска
       let baseRes = q
-        ? await productsApi.search(q, { page, size: 20 })
+        ? await productsApi.search(q, { page, size: 50 })
         : await productsApi.filter(
             {
               sortBy: 'newest',
               ...(categoryId ? { categoryId: Number(categoryId) } : {}),
             },
-            { page, size: 20 },
+            { page, size: 50 },
           );
 
       // Если это похоже на SKU, доберём через bySku и поставим в начало (если ещё нет).
@@ -77,8 +77,8 @@ export default function AdminProductsPage() {
     buildResults()
       .then(res => {
         setItems(res.items);
-        setPages(res.pages);
-        setTotal(res.items.length === res.total ? res.total : res.items.length);
+        setPages(res.pages || 1);
+        setTotal(res.total ?? res.items.length); // реальный total от бэка (для пагинации)
       })
       .catch(err => setError(err?.message || 'Не удалось загрузить'))
       .finally(() => setLoading(false));

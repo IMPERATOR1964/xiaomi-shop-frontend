@@ -31,9 +31,20 @@ export default function CatalogFilter({
 
   const isChecked = (key, value) => filters[key]?.has(value);
 
+  const priceChanged = priceRange[0] > priceMin || priceRange[1] < priceMax;
   const totalActive =
     Object.values(filters).reduce((s, x) => s + (x?.size || 0), 0)
-    + (priceRange[0] > priceMin || priceRange[1] < priceMax ? 1 : 0);
+    + (priceChanged ? 1 : 0);
+
+  // Плоский список выбранных значений для чипсов
+  const labelByKey = Object.fromEntries(options.map(o => [o.key, o.label]));
+  const activeChips = [];
+  Object.entries(filters).forEach(([key, set]) => {
+    if (!set) return;
+    for (const value of set) {
+      activeChips.push({ key, label: labelByKey[key] || key, value });
+    }
+  });
 
   // Разделяем опции на главные и второстепенные
   const primaryOptions   = options.filter(o => o.primary !== false);
@@ -106,6 +117,34 @@ export default function CatalogFilter({
           </button>
         )}
       </div>
+
+      {/* Активные фильтры — чипсы, убираются по одному */}
+      {(activeChips.length > 0 || priceChanged) && (
+        <div className="catalog-active-chips">
+          {priceChanged && (
+            <button
+              type="button"
+              className="catalog-active-chip"
+              onClick={() => setPriceRange([priceMin, priceMax])}
+            >
+              {priceRange[0].toLocaleString('ru-RU')}–{priceRange[1].toLocaleString('ru-RU')} ₽
+              <span className="catalog-active-chip-x">×</span>
+            </button>
+          )}
+          {activeChips.map(({ key, label, value }) => (
+            <button
+              type="button"
+              key={`${key}:${value}`}
+              className="catalog-active-chip"
+              onClick={() => toggleValue(key, value)}
+              title={`${label}: ${value}`}
+            >
+              {value}
+              <span className="catalog-active-chip-x">×</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Цена — всегда первой и в открытом виде, она ключевая */}
       <div className="catalog-filter-section">

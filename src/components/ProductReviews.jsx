@@ -58,7 +58,7 @@ const formatDate = (iso) => {
   catch { return ''; }
 };
 
-export default function ProductReviews({ productId }) {
+export default function ProductReviews({ productId, onPhotoClick }) {
   const { loadReviews, addReview, updateReview, removeReview,
           getReviews, getAverageRating, getReviewsCount } = useReviews();
   const { isAuthenticated, user } = useAuth();
@@ -336,9 +336,19 @@ export default function ProductReviews({ productId }) {
                     {Array.isArray(r.photos) && r.photos.length > 0 && (
                       <div className="review-photos-view">
                         {r.photos.map((src, i) => (
-                          <a key={i} href={src} target="_blank" rel="noreferrer" className="review-photo-view">
-                            <img src={src} alt={`Фото ${i + 1}`} />
-                          </a>
+                          <button
+                            key={i}
+                            type="button"
+                            className="review-photo-view"
+                            onClick={() => onPhotoClick?.(src)}
+                          >
+                            <img
+                              src={src}
+                              alt=""
+                              loading="lazy"
+                              onError={(e) => { e.currentTarget.closest('.review-photo-view').style.display = 'none'; }}
+                            />
+                          </button>
                         ))}
                       </div>
                     )}
