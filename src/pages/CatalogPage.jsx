@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import CategoryCard from '../components/CategoryCard';
@@ -11,7 +11,10 @@ import { useCategories } from '../context/CategoriesContext';
 import { productsApi } from '../api';
 import '../styles/catalog.css';
 
-const PAGE_SIZE = 24;
+// Грузим весь набор категории одним запросом и фильтруем/сортируем на клиенте —
+// так левый фильтр никогда не «схлопывается», можно комбинировать значения,
+// а сортировка работает мгновенно и предсказуемо.
+const LOAD_SIZE = 200;
 
 export default function CatalogPage() {
   const { category } = useParams();
@@ -49,50 +52,44 @@ export default function CatalogPage() {
     localStorage.setItem(sortKey, sortBy);
   }, [sortBy, sortKey]);
 
-  const [products, setProducts] = useState([]);
-  const [total,    setTotal]    = useState(0);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
+  // allProducts — полный набор категории/поиска (грузится один раз, без фильтров).
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
 
-  const buildFilterRequest = useCallback(() => {
-    const stringFilters    = {};
-    const multiValueFilters = {};
-    Object.entries(filters).forEach(([key, set]) => {
-      if (!set || set.size === 0) return;
-      const arr = [...set];
-      if (arr.length === 1) stringFilters[key] = arr[0];
-      else                  multiValueFilters[key] = arr;
-    });
-
-    const req = { sortBy };
-    if (backendCategoryId) req.categoryId = backendCategoryId;
-    if (searchQuery)       req.query = searchQuery;
-    if (priceRange?.[0] > 0)        req.minPrice = priceRange[0];
-    if (priceRange?.[1] < 999999)   req.maxPrice = priceRange[1];
-    if (Object.keys(stringFilters).length)    req.stringFilters = stringFilters;
-    if (Object.keys(multiValueFilters).length) req.multiValueFilters = multiValueFilters;
-    return req;
-  }, [filters, sortBy, priceRange, backendCategoryId, searchQuery]);
-
+  // Загрузка полного набора. Зависит ТОЛЬКО от категории и поиска,
+  // НЕ от filters/sortBy/price — поэтому набор не перезагружается при фильтрации.
   useEffect(() => {
     if (isMain && !searchQuery) return;
 
     let alive = true;
     setLoading(true);
     setError(null);
-    productsApi
-      .filter(buildFilterRequest(), { page: 0, size: PAGE_SIZE })
+
+    const load = searchQuery
+      ? productsApi.search(searchQuery, { page: 0, size: LOAD_SIZE })
+      : productsApi.filter(
+          { sortBy: 'newest', ...(backendCategoryId ? { categoryId: backendCategoryId } : {}) },
+          { page: 0, size: LOAD_SIZE },
+        );
+
+    load
       .then(res => {
         if (!alive) return;
-        setProducts(res.items);
-        setTotal(res.total);
+        let items = res.items;
+        // Поиск может вернуть товары разных категорий — оставляем только нужную.
+        if (searchQuery && backendCategoryId) {
+          items = items.filter(p => p.categoryId === backendCategoryId);
+        }
+        setAllProducts(items);
       })
       .catch(err => { if (alive) setError(err?.message || 'Не удалось загрузить товары'); })
       .finally(() => { if (alive) setLoading(false); });
 
     return () => { alive = false; };
-  }, [isMain, searchQuery, buildFilterRequest]);
+  }, [isMain, searchQuery, backendCategoryId]);
 
+  // Сброс фильтров при смене категории/поиска.
   useEffect(() => {
     setFilters({});
     setPriceRange([0, 999999]);
@@ -108,19 +105,43 @@ export default function CatalogPage() {
     setPriceRange([0, 999999]);
   };
 
+  // Опции фильтра строятся из ПОЛНОГО набора — поэтому секции стабильны,
+  // не исчезают после выбора значения.
   const filterOptions = useMemo(() => {
-    if (isMain || !products.length) return [];
+    if (isMain || !allProducts.length) return [];
     const conf = FILTER_CONFIG[activeCategory] || [];
     return conf.map(({ key, label, primary }) => {
       const values = [...new Set(
-        products.filter(p => p.specs?.[key] != null).map(p => String(p.specs[key]))
+        allProducts.filter(p => p.specs?.[key] != null).map(p => String(p.specs[key]))
       )].sort((a, b) => a.localeCompare(b, 'ru'));
       return { key, label, primary: primary !== false, values };
     }).filter(x => x.values.length > 1);
-  }, [activeCategory, products, isMain]);
+  }, [activeCategory, allProducts, isMain]);
 
-  const computedPriceMin = products.length ? Math.min(...products.map(p => p.price)) : 0;
-  const computedPriceMax = products.length ? Math.max(...products.map(p => p.price)) : 0;
+  const computedPriceMin = allProducts.length ? Math.min(...allProducts.map(p => p.price)) : 0;
+  const computedPriceMax = allProducts.length ? Math.max(...allProducts.map(p => p.price)) : 0;
+
+  // Применяем фильтры + цену + сортировку НА КЛИЕНТЕ к полному набору.
+  // AND между разными атрибутами, OR внутри одного атрибута.
+  const products = useMemo(() => {
+    let list = allProducts.filter(p => {
+      if (p.price < priceRange[0] || p.price > priceRange[1]) return false;
+      for (const [key, set] of Object.entries(filters)) {
+        if (!set || set.size === 0) continue;
+        const v = p.specs?.[key];
+        if (v == null || !set.has(String(v))) return false;
+      }
+      return true;
+    });
+    const arr = [...list];
+    if      (sortBy === 'price_asc')  arr.sort((a, b) => a.price - b.price);
+    else if (sortBy === 'price_desc') arr.sort((a, b) => b.price - a.price);
+    else if (sortBy === 'rating')     arr.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+    // newest / popular — оставляем порядок, в котором пришло с бэка
+    return arr;
+  }, [allProducts, filters, priceRange, sortBy]);
+
+  const total = products.length;
 
   // Главная каталога — карточки категорий
   if (isMain && !searchQuery) {
