@@ -1,0 +1,34 @@
+export default function AdminOrdersPage() {
+  const [status, setStatus]   = useState('');
+  const [orders, setOrders]   = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Загрузка заказов с возможностью фильтрации по статусу
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await ordersApi.adminList({ status, size: 50 });
+    setOrders(res.items);
+    setLoading(false);
+  }, [status]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div className="admin-orders">
+      <h1>Заказы</h1>
+      <select value={status} onChange={e => setStatus(e.target.value)}>
+        <option value="">Все статусы</option>
+        {Object.entries(STATUS_LABEL).map(([k, v]) => (
+          <option key={k} value={k}>{v.text}</option>
+        ))}
+      </select>
+      {orders.map(o => (
+        <div key={o.id} className="admin-order-row">
+          <span>#{o.id}</span>
+          <span>{STATUS_LABEL[o.status]?.text || o.status}</span>
+          <span>{formatPrice(o.total)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,26 @@
+export default function HomePage() {
+  const { user } = useAuth();
+  const { ids: favIds }     = useFavorites();
+  const { ids: historyIds } = useHistory();
+
+  // Персонализированные рекомендации на основе истории и избранного
+  const { items: recommended } = useRecommendations(historyIds, favIds);
+
+  return (
+    <>
+      <section className="hero">
+        <div className="container hero-inner">
+          <h1 className="hero-title">
+            {user
+              ? <>Подобрали товары<br />специально для вас</>
+              : <>Мир <span className="highlight">Xiaomi</span><br />в одном месте</>}
+          </h1>
+          <div className="hero-actions">
+            <Link to="/catalog" className="btn-primary">Каталог</Link>
+          </div>
+        </div>
+      </section>
+      {/* блоки категорий, рекомендаций и недавно просмотренных товаров */}
+    </>
+  );
+}

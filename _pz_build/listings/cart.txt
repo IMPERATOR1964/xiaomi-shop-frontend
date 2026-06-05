@@ -1,0 +1,61 @@
+export default function CartPage() {
+  const { cart, updateQty, removeFromCart, cartTotal, cartCount,
+          clearCart, loading } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleClear = async () => {
+    if (!confirm('Очистить корзину полностью?')) return;
+    await clearCart();
+  };
+
+  if (loading) {
+    return <div className="cart-page"><Loading label="Загружаем корзину..." /></div>;
+  }
+  // Пустая корзина: предлагаем перейти в каталог
+  if (cart.length === 0) {
+    return (
+      <div className="cart-page">
+        <h1 className="section-title">Корзина</h1>
+        <EmptyState title="Корзина пуста — добавьте товары из каталога"
+                    cta="Перейти в каталог" ctaHref="/catalog" />
+      </div>
+    );
+  }
+
+  const goCheckout = () => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    navigate('/checkout');
+  };
+
+  return (
+    <div className="cart-page">
+      <div className="cart-items">
+        {cart.map(item => (
+          <div className="cart-item" key={item.id}>
+            <Link to={`/product/${item.id}`}>{item.name}</Link>
+            <div className="cart-item-qty">
+              <button onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
+              <span>{item.qty}</span>
+              <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+            </div>
+            <div>{formatPrice(item.price * item.qty)}</div>
+            <button onClick={() => removeFromCart(item.id)}>удалить</button>
+          </div>
+        ))}
+      </div>
+      <div className="cart-summary">
+        <div className="cart-summary-row">
+          <span>Товары ({cartCount})</span><span>{formatPrice(cartTotal)}</span>
+        </div>
+        <div className="cart-summary-row"><span>Доставка</span><span>Бесплатно</span></div>
+        <div className="cart-summary-row total">
+          <span>Итого</span><span>{formatPrice(cartTotal)}</span>
+        </div>
+        <button className="btn-primary" onClick={goCheckout}>
+          {isAuthenticated ? 'Оформить заказ' : 'Войти и оформить'}
+        </button>
+      </div>
+    </div>
+  );
+}

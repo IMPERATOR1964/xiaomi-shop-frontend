@@ -1,0 +1,36 @@
+export default function CatalogFilter({ options, filters, setFilters, onReset }) {
+  const [expanded, setExpanded] = useState({});
+  const toggleSection = (k) => setExpanded(s => ({ ...s, [k]: !s[k] }));
+
+  // Переключение значения характеристики в наборе выбранных фильтров
+  const toggleValue = (key, value) => {
+    setFilters(prev => {
+      const next = { ...prev };
+      const set = new Set(next[key] || []);
+      if (set.has(value)) set.delete(value);
+      else set.add(value);
+      next[key] = set;
+      return next;
+    });
+  };
+
+  const isChecked = (key, value) => filters[key]?.has(value);
+
+  return (
+    <aside className="catalog-filter">
+      {options.map(o => (
+        <div key={o.key} className="filter-section">
+          <button onClick={() => toggleSection(o.key)}>{o.label}</button>
+          {expanded[o.key] && o.values.map(v => (
+            <label key={v}>
+              <input type="checkbox" checked={isChecked(o.key, v)}
+                     onChange={() => toggleValue(o.key, v)} />
+              {v}
+            </label>
+          ))}
+        </div>
+      ))}
+      <button onClick={onReset}>Сбросить фильтры</button>
+    </aside>
+  );
+}

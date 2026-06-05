@@ -1,0 +1,29 @@
+export default function ForgotPasswordPage() {
+  const { forgotPassword } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+
+  // Запрос кода для восстановления пароля
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) return setError('Укажите адрес электронной почты');
+    try {
+      await forgotPassword(trimmed);
+      // Переход к вводу кода и нового пароля
+      navigate('/reset-password', { state: { email: trimmed } });
+    } catch (err) {
+      setError(err.message || 'Не удалось отправить письмо');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <div className="auth-error">{error}</div>}
+      <input type="email" value={email}
+             onChange={e => setEmail(e.target.value)} placeholder="Email" />
+      <button type="submit" className="auth-submit">Восстановить пароль</button>
+    </form>
+  );
+}

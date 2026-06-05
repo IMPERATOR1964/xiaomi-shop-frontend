@@ -114,9 +114,40 @@
 }
 
 @media (max-width: 768px) {
-  .lightbox-nav { width: 40px; height: 40px; }
-  .lightbox-prev { left: 8px; }
-  .lightbox-next { right: 8px; }
-  .lightbox-stage, .lightbox-img { max-width: 94vw; }
-  .lightbox-thumb { width: 44px; height: 44px; }
+  /* Картинка занимает верхнюю часть, оставляя место под стрелки и превью */
+  .lightbox-stage {
+    max-width: 96vw;
+    max-height: 60vh;
+  }
+  .lightbox-img {
+    max-width: 96vw;
+    max-height: 60vh;
+  }
+
+  /* Стрелки крупные и хорошо видимые, ниже центра картинки */
+  .lightbox-nav {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    top: 42%;
+  }
+  .lightbox-prev { left: 10px; }
+  .lightbox-next { right: 10px; }
+
+  /* Превью всегда видны снизу */
+  .lightbox-thumbs {
+    bottom: 16px;
+    gap: 6px;
+    padding: 8px;
+    max-width: 96vw;
+  }
+  .lightbox-thumb { width: 48px; height: 48px; }
+
+  .lightbox-close {
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+  }
+  .lightbox-counter { top: 16px; }
 }

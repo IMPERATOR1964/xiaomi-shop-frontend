@@ -1,0 +1,49 @@
+export default function ProductPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { has: isFav, toggle: toggleFav } = useFavorites();
+  const { has: isCmp, toggle: toggleCmp } = useCompare();
+  const { track } = useHistory();
+
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  // Загрузка товара и запоминание его просмотра
+  useEffect(() => {
+    setLoading(true);
+    productsApi.byId(id)
+      .then(p => { setProduct(p); if (p?.id != null) track(p.id); })
+      .catch(err => setError(err?.message || 'Товар не найден'))
+      .finally(() => setLoading(false));
+  }, [id, track]);
+
+  if (loading) return <Loading label="Загружаем товар..." />;
+  if (error || !product) return <p>Товар не найден</p>;
+
+  const fav = isFav(product.id);
+  const cmp = isCmp(product.id);
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    navigate('/cart');
+  };
+
+  return (
+    <div className="product-page">
+      <h1>{product.name}</h1>
+      <div className="product-price">{formatPrice(product.price)}</div>
+      <ProductVariants product={product} />
+      <button className="btn-primary" onClick={handleAddToCart}>В корзину</button>
+      <button onClick={() => toggleFav(product.id)}>
+        {fav ? 'В избранном' : 'В избранное'}
+      </button>
+      <button onClick={() => toggleCmp(product.id)}>
+        {cmp ? 'В сравнении' : 'К сравнению'}
+      </button>
+      <ProductReviews productId={product.id} />
+      <SimilarProducts id={product.id} />
+    </div>
+  );
+}

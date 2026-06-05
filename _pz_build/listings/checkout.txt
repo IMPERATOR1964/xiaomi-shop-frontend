@@ -1,0 +1,44 @@
+export default function CheckoutPage() {
+  const navigate = useNavigate();
+  const { cart, cartTotal, cartCount, clearCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
+  const [deliveryAddress, setAddress] = useState('');
+  const [contactPhone, setPhone]      = useState('');
+  const [customerNotes, setNotes]     = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy]   = useState(false);
+
+  // Оформление доступно только авторизованному пользователю
+  useEffect(() => {
+    if (!isAuthenticated) navigate('/login');
+  }, [isAuthenticated, navigate]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!deliveryAddress.trim()) return setError('Укажите адрес доставки');
+    if (!contactPhone.trim())     return setError('Укажите контактный телефон');
+    const digits = contactPhone.replace(/\D/g, '');
+    if (digits.length < 7) return setError('Некорректный номер телефона');
+
+    setBusy(true);
+    try {
+      const order = await ordersApi.checkout({
+        deliveryAddress: deliveryAddress.trim(),
+        contactPhone:    digits,
+        customerNotes:   customerNotes.trim() || undefined,
+      });
+      await clearCart();
+      toast.success(`Заказ #${order.id} оформлен`);
+      navigate(`/orders/${order.id}`);
+    } catch (err) {
+      setError(err.message || 'Не удалось оформить заказ');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return ( /* форма адреса доставки, телефона, примечания и состава заказа */ );
+}

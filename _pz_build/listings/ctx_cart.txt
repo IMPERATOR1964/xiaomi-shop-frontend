@@ -1,0 +1,25 @@
+const addToCart = useCallback(async (product, qty = 1) => {
+  // Гость: корзина хранится в localStorage браузера
+  if (!isAuthenticated) {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) return prev.map(item =>
+        item.id === product.id ? { ...item, qty: item.qty + qty } : item);
+      return [...prev, {
+        id: product.id, name: product.name, price: product.price,
+        qty, imageUrl: product.imageUrl, sku: product.sku,
+      }];
+    });
+    toast?.success?.('Товар добавлен в корзину');
+    return;
+  }
+  // Авторизованный пользователь: корзина хранится на сервере
+  try {
+    const res = await cartApi.addItem(product.id, qty);
+    setCartEnriched(res.items);
+    toast?.success?.('Товар добавлен в корзину');
+  } catch (err) {
+    if (err instanceof ApiError) toast?.error?.(err.message);
+    throw err;
+  }
+}, [isAuthenticated, toast]);

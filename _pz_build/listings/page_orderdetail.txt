@@ -1,0 +1,39 @@
+export default function OrderDetailPage() {
+  const { id } = useParams();
+  const { isStaff } = useAuth();
+  const [order, setOrder] = useState(null);
+  const [newStatus, setNewStatus] = useState('');
+
+  // Загрузка данных заказа
+  useEffect(() => {
+    ordersApi.byId(id).then(setOrder);
+  }, [id]);
+
+  // Отмена заказа пользователем
+  const cancel = async () => {
+    const updated = await ordersApi.cancel(order.id);
+    setOrder(updated);
+  };
+
+  // Изменение статуса заказа администратором
+  const changeStatus = async () => {
+    const updated = await ordersApi.updateStatus(order.id, newStatus);
+    setOrder(updated);
+  };
+
+  if (!order) return <Loading label="Загружаем заказ..." />;
+
+  return (
+    <div className="order-detail">
+      <h1>Заказ #{order.id}</h1>
+      <div>Статус: {order.status}</div>
+      <div>Адрес доставки: {order.deliveryAddress}</div>
+      {order.items.map(it => (
+        <div key={it.id}>{it.name}, {it.quantity} шт.</div>
+      ))}
+      <div>Итого: {formatPrice(order.total)}</div>
+      <button onClick={cancel}>Отменить заказ</button>
+      {isStaff && <button onClick={changeStatus}>Изменить статус</button>}
+    </div>
+  );
+}

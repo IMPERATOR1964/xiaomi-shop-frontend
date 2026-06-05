@@ -1,0 +1,40 @@
+const MAX = 10;
+const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const ACCEPT = 'image/png,image/jpeg,image/webp';
+
+// Загрузка фотографий товара (до MAX штук) в панели администратора
+export default function MultiImageUploader({ productId, imageUrls, onChange }) {
+  const fileRef = useRef(null);
+  const [gallery, setGallery] = useState(imageUrls || []);
+  const [error, setError] = useState('');
+
+  const remaining = MAX - gallery.length;
+
+  // Проверка размера и типа файла перед отправкой на сервер
+  const upload = async (files) => {
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError('Файл слишком большой');
+        continue;
+      }
+      const res = await adminApi.products.uploadImage(productId, file);
+      setGallery(prev => [...prev, res.imageUrl]);
+    }
+    onChange?.(gallery);
+  };
+
+  return (
+    <div className="image-uploader">
+      <button type="button" onClick={() => fileRef.current?.click()}
+              disabled={remaining <= 0}>
+        Загрузить фото
+      </button>
+      <input ref={fileRef} type="file" accept={ACCEPT} multiple hidden
+             onChange={e => upload([...e.target.files])} />
+      {error && <p className="error">{error}</p>}
+      <div className="gallery">
+        {gallery.map((url, i) => <img key={i} src={url} alt="" />)}
+      </div>
+    </div>
+  );
+}

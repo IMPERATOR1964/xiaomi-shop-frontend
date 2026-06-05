@@ -1,0 +1,21 @@
+export const ordersApi = {
+  // Оформление заказа из корзины
+  checkout: async ({ deliveryAddress, contactPhone, customerNotes }) =>
+    adaptOrder(await post('/orders/checkout',
+                          { deliveryAddress, contactPhone, customerNotes })),
+
+  // Список заказов текущего пользователя
+  list: async (opts = {}) =>
+    adaptPage(await get('/orders',
+                        { params: pageParams({ sort: 'createdAt,desc', ...opts }) })),
+
+  // Заказ по идентификатору
+  byId: async (id) => adaptOrder(await get(`/orders/${id}`)),
+
+  // Отмена заказа пользователем
+  cancel: async (id) => adaptOrder(await post(`/orders/${id}/cancel`)),
+
+  // Изменение статуса заказа (доступно администратору)
+  updateStatus: async (id, status) =>
+    adaptOrder(await patch(`/orders/${id}/status`, { status })),
+};

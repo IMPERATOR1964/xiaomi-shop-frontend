@@ -1,0 +1,27 @@
+export default function SimilarProducts({ productId, count = 4 }) {
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Загрузка похожих товаров с сервера
+  useEffect(() => {
+    if (!productId) return;
+    setLoading(true);
+    productsApi.similar(productId, count)
+      .then(list => setItems(list))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, [productId, count]);
+
+  if (!loading && items.length === 0) return null;
+
+  return (
+    <section className="similar">
+      <h2 className="similar-title">Похожие товары</h2>
+      <div className="products-grid">
+        {loading
+          ? <ProductCardSkeleton count={count} />
+          : items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+      </div>
+    </section>
+  );
+}

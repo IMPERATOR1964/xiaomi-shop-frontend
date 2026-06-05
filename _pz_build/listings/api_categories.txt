@@ -1,0 +1,11 @@
+export const categoriesApi = {
+  // Список категорий товаров
+  list: async () => {
+    const data = await get('/categories', { auth: false });
+    return (data || []).map(adaptCategory);
+  },
+
+  // Категория по идентификатору
+  byId: async (id) =>
+    adaptCategory(await get(`/categories/${id}`, { auth: false })),
+};

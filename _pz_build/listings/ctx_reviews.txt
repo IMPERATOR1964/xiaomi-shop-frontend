@@ -1,0 +1,36 @@
+export function ReviewsProvider({ children }) {
+  // Кэш отзывов в памяти контекста по идентификатору товара
+  const [byProduct, setByProduct] = useState({});
+
+  // Загрузка отзывов и среднего рейтинга товара с сервера
+  const loadReviews = useCallback(async (productId) => {
+    const res = await reviewsApi.forProduct(productId, { size: 50 });
+    const summary = await reviewsApi.summary(productId).catch(() => null);
+    setEntry(productId, {
+      items: res.items,
+      total: res.total,
+      avg:   summary?.averageRating ?? 0,
+    });
+    return res.items;
+  }, []);
+
+  // Добавление нового отзыва с пересчётом среднего рейтинга
+  const addReview = useCallback(async (productId, { rating, title, comment }) => {
+    const created = await reviewsApi.create(productId, { rating, title, comment });
+    setByProduct(prev => {
+      const cur = prev[productId] || { items: [], total: 0, avg: 0 };
+      const items = [created, ...cur.items];
+      return { ...prev, [productId]: {
+        items, total: cur.total + 1,
+        avg: items.reduce((s, r) => s + r.rating, 0) / items.length,
+      }};
+    });
+    return created;
+  }, []);
+
+  return (
+    <ReviewsContext.Provider value={{ byProduct, loadReviews, addReview }}>
+      {children}
+    </ReviewsContext.Provider>
+  );
+}

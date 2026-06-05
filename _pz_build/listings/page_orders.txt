@@ -1,0 +1,37 @@
+const STATUS_LABEL = {
+  PENDING:   'Ожидает оплаты',
+  PAID:      'Оплачен',
+  SHIPPED:   'Отправлен',
+  DELIVERED: 'Доставлен',
+  CANCELLED: 'Отменён',
+};
+
+export default function OrdersPage() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders]   = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Личный кабинет доступен только авторизованному пользователю
+  useEffect(() => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    ordersApi.list({ size: 50 })
+      .then(res => setOrders(res.items))
+      .finally(() => setLoading(false));
+  }, [isAuthenticated, navigate]);
+
+  if (loading) return <Loading label="Загружаем заказы..." />;
+
+  return (
+    <div className="orders-page">
+      <h1 className="section-title">Мои заказы</h1>
+      {orders.map(o => (
+        <Link to={`/orders/${o.id}`} key={o.id} className="order-row">
+          <span>Заказ #{o.id}</span>
+          <span className="order-status">{STATUS_LABEL[o.status] || o.status}</span>
+          <span>{formatPrice(o.total)}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,31 @@
+// Хранилище маркеров доступа в localStorage браузера
+export const tokenStore = {
+  get:        () => localStorage.getItem(TOKEN_KEY),
+  getRefresh: () => localStorage.getItem(REFRESH_KEY),
+  set: (token, refreshToken) => {
+    if (token)        localStorage.setItem(TOKEN_KEY, token);
+    if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+  },
+  clear: () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+  },
+};
+
+// Декодирование полезной нагрузки маркера JWT для определения ролей
+export function decodeJwt(token) {
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(escape(atob(payload))));
+  } catch {
+    return null;
+  }
+}
+
+// Извлечение списка ролей пользователя из маркера доступа
+export function getRolesFromToken(token) {
+  const decoded = decodeJwt(token || tokenStore.get());
+  if (!decoded?.auth) return [];
+  return String(decoded.auth).split(',').map(s => s.trim()).filter(Boolean);
+}

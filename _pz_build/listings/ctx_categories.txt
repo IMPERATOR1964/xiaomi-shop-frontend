@@ -1,0 +1,28 @@
+export function CategoriesProvider({ children }) {
+  const [list, setList] = useState(STATIC_CATEGORIES);
+
+  // Загрузка категорий с сервера и слияние со статическим списком,
+  // что позволяет показывать в каталоге и новые категории
+  const reload = useCallback(async () => {
+    const fromApi = await categoriesApi.list();
+    const merged = [STATIC_CATEGORIES.find(c => c.id === 'all')];
+    for (const dto of fromApi) {
+      const known = STATIC_CATEGORIES.find(
+        c => c.backendId === dto.id || c.backendName === dto.name);
+      merged.push(known
+        ? { ...known, backendId: dto.id, productsCount: dto.productsCount }
+        : { id: `cat-${dto.id}`, label: dto.name, backendId: dto.id });
+    }
+    setList(merged);
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const findBySlug = (slug) => list.find(c => c.id === slug);
+
+  return (
+    <CategoriesContext.Provider value={{ categories: list, findBySlug, reload }}>
+      {children}
+    </CategoriesContext.Provider>
+  );
+}

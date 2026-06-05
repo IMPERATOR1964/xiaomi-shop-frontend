@@ -1,0 +1,28 @@
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const idRef = useRef(0);
+
+  // Удаление уведомления из списка
+  const remove = useCallback((id) =>
+    setToasts(prev => prev.filter(t => t.id !== id)), []);
+
+  // Добавление уведомления с автоматическим скрытием по таймеру
+  const push = useCallback((type, message, { duration = 2500 } = {}) => {
+    const id = ++idRef.current;
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => remove(id), duration);
+  }, [remove]);
+
+  const toast = {
+    success: (m, o) => push('success', m, o),
+    error:   (m, o) => push('error', m, o),
+    info:    (m, o) => push('info', m, o),
+  };
+
+  return (
+    <ToastContext.Provider value={{ toast }}>
+      {children}
+      <ToastContainer toasts={toasts} onClose={remove} />
+    </ToastContext.Provider>
+  );
+}

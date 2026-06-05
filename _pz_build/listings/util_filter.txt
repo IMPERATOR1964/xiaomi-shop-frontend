@@ -1,0 +1,24 @@
+// Форматирование цены в рублях с разделителями разрядов
+export const formatPrice = (price) =>
+  price.toLocaleString('ru-RU') + ' ₽';
+
+// Конфигурация фильтров по характеристикам для каждой категории.
+// Для каждого фильтра задаются ключ характеристики, подпись и признак
+// основного (primary) фильтра, отображаемого без раскрытия списка.
+export const FILTER_CONFIG = {
+  smartphones: [
+    { key: 'Цвет',             label: 'Цвет',       primary: true  },
+    { key: 'Объём ОЗУ',        label: 'ОЗУ',        primary: true  },
+    { key: 'Объём накопителя', label: 'Накопитель', primary: true  },
+    { key: 'Процессор',        label: 'Процессор',  primary: true  },
+    { key: 'Диагональ экрана', label: 'Диагональ',  primary: false },
+    { key: 'Основная камера',  label: 'Камера',     primary: false },
+    { key: 'Поддержка 5G',     label: '5G',         primary: false },
+  ],
+  powerbanks: [
+    { key: 'Ёмкость',          label: 'Ёмкость',    primary: true  },
+    { key: 'Мощность зарядки', label: 'Мощность',   primary: true  },
+    { key: 'Цвет',             label: 'Цвет',       primary: false },
+  ],
+  // ... аналогичные наборы фильтров для остальных категорий
+};

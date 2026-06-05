@@ -1,0 +1,20 @@
+export const wishlistApi = {
+  // Список избранных товаров пользователя
+  list: async (opts = {}) => {
+    const data = await get('/wishlist', { params: pageParams(opts) });
+    const items = (data?.content || []).map(w => adaptProduct(w.product || w));
+    return { items, total: data?.totalElements ?? items.length };
+  },
+
+  // Добавление товара в избранное
+  add:    (productId) => post(`/wishlist/${productId}`),
+
+  // Удаление товара из избранного
+  remove: (productId) => del(`/wishlist/${productId}`),
+
+  // Проверка наличия товара в избранном
+  exists: (productId) => get(`/wishlist/${productId}/exists`),
+
+  // Количество товаров в избранном
+  count:  ()          => get('/wishlist/count'),
+};

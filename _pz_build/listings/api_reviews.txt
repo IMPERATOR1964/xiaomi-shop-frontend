@@ -1,0 +1,27 @@
+export const reviewsApi = {
+  // Список отзывов о товаре
+  forProduct: async (productId, opts = {}) => {
+    const data = await get(`/products/${productId}/reviews`,
+                           { params: pageParams(opts), auth: false });
+    return {
+      items: (data?.content || []).map(adaptReview),
+      total: data?.totalElements ?? 0,
+    };
+  },
+
+  // Сводка по отзывам (средний рейтинг товара)
+  summary: async (productId) =>
+    get(`/products/${productId}/reviews/summary`, { auth: false }),
+
+  // Публикация нового отзыва
+  create: async (productId, { rating, title, comment }) =>
+    adaptReview(await post(`/products/${productId}/reviews`,
+                           { rating, title, comment })),
+
+  // Изменение существующего отзыва
+  update: async (reviewId, { rating, title, comment }) =>
+    adaptReview(await put(`/reviews/${reviewId}`, { rating, title, comment })),
+
+  // Удаление отзыва
+  remove: (reviewId) => del(`/reviews/${reviewId}`),
+};

@@ -1,0 +1,27 @@
+// Универсальный компонент изображения товара: при отсутствии или ошибке
+// загрузки фотографии показывает значок категории вместо «битой» картинки
+export default function ProductImage({ src, alt = '', category = 'all',
+                                      iconSize = 56, className, imgClassName }) {
+  const [failed, setFailed] = useState(false);
+
+  // При смене адреса изображения повторяем попытку загрузки
+  useEffect(() => { setFailed(false); }, [src]);
+
+  if (!src || failed) {
+    return (
+      <span className={className}>
+        <CategoryIcon category={category} size={iconSize} />
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      className={imgClassName}
+      onError={() => setFailed(true)}
+    />
+  );
+}

@@ -1,0 +1,37 @@
+export default function Header() {
+  const { cartCount } = useCart();
+  const { user, isStaff } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const { count: favCount } = useFavorites();
+  const { count: cmpCount } = useCompare();
+  const [searchValue, setSearchValue] = useState('');
+  const navigate = useNavigate();
+
+  // Переход к результатам поиска по введённому запросу
+  const submitSearch = (e) => {
+    e.preventDefault();
+    const q = searchValue.trim();
+    if (q) navigate(`/catalog?q=${encodeURIComponent(q)}`);
+  };
+
+  return (
+    <header className="header">
+      <Link to="/" className="logo">Voltix</Link>
+      <form className="header-search" onSubmit={submitSearch}>
+        <input value={searchValue} onChange={e => setSearchValue(e.target.value)}
+               placeholder="Поиск товаров" />
+      </form>
+      <nav>
+        <Link to="/catalog" className="nav-link">Каталог</Link>
+        <Link to="/compare" className="header-btn">Сравнение {cmpCount > 0 && cmpCount}</Link>
+        <Link to="/favorites" className="header-btn">Избранное {favCount > 0 && favCount}</Link>
+        <Link to="/cart" className="header-btn">Корзина {cartCount > 0 && cartCount}</Link>
+        <Link to={user ? '/profile' : '/login'} className="header-btn">Профиль</Link>
+        {isStaff && <Link to="/admin" className="header-btn">Админ-панель</Link>}
+        <button onClick={toggleTheme}>
+          {theme === 'light' ? 'Тёмная' : 'Светлая'} тема
+        </button>
+      </nav>
+    </header>
+  );
+}

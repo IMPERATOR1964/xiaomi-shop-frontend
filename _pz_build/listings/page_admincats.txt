@@ -1,0 +1,38 @@
+export default function AdminCategoriesPage() {
+  const [items, setItems] = useState([]);
+  const [name, setName]   = useState('');
+  const [desc, setDesc]   = useState('');
+  const [error, setError] = useState('');
+
+  // Загрузка списка категорий
+  const load = () => categoriesApi.list().then(setItems);
+  useEffect(() => { load(); }, []);
+
+  // Создание новой категории
+  const create = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return setError('Укажите название категории');
+    try {
+      await adminApi.categories.create({
+        name: name.trim(), description: desc.trim() || null,
+      });
+      setName(''); setDesc('');
+      load();
+    } catch (err) {
+      setError(err.message || 'Не удалось создать категорию');
+    }
+  };
+
+  return (
+    <div className="admin-categories">
+      <form onSubmit={create} className="admin-form">
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Название" />
+        <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Описание" />
+        <button type="submit">Добавить категорию</button>
+      </form>
+      {items.map(c => (
+        <div key={c.id} className="admin-cat-row">{c.label || c.name}</div>
+      ))}
+    </div>
+  );
+}

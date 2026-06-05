@@ -1,0 +1,35 @@
+// Кнопка «Поделиться»: использует системное окно обмена,
+// а при его отсутствии копирует ссылку в буфер обмена
+export default function ShareButton({ product }) {
+  const { toast } = useToast();
+  const [shared, setShared] = useState(false);
+
+  const onClick = async () => {
+    const url = window.location.href;
+    const data = { title: product.name, text: product.shortDesc || '', url };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(data);
+        return;
+      }
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      toast?.success?.('Ссылка скопирована');
+      setTimeout(() => setShared(false), 1800);
+    } catch {
+      prompt('Скопируйте ссылку:', url);
+    }
+  };
+
+  return (
+    <button type="button" className="product-share-btn" onClick={onClick}>
+      {shared ? 'Скопировано' : 'Поделиться'}
+    </button>
+  );
+}

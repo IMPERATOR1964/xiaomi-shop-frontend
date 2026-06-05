@@ -1,0 +1,20 @@
+export const cartApi = {
+  // Получение текущей корзины пользователя
+  get: async () => adaptCart(await get('/cart')),
+
+  // Добавление товара в корзину
+  addItem: async (productId, quantity = 1) =>
+    adaptCart(await post('/cart/items', { productId, quantity })),
+
+  // Изменение количества товара в корзине
+  setQty: async (productId, quantity) =>
+    adaptCart(await put(`/cart/items/${productId}`, undefined,
+                        { params: { quantity } })),
+
+  // Удаление товара из корзины
+  removeItem: async (productId) =>
+    adaptCart(await del(`/cart/items/${productId}`)),
+
+  // Полная очистка корзины
+  clear: () => del('/cart'),
+};

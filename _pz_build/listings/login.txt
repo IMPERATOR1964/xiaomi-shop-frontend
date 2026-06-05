@@ -1,0 +1,46 @@
+export default function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [needResend, setNeedResend] = useState(null);
+  const { login, resendVerification } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!username || !password) { setError('Заполните все поля'); return; }
+    setLoading(true);
+    try {
+      await login({ username: username.trim(), password });
+      navigate('/profile');
+    } catch (err) {
+      const msg = String(err.message || '').toLowerCase();
+      if (msg.includes('email') && msg.includes('verif')) {
+        setError('Email не подтверждён. Проверьте почту.');
+        setNeedResend(username);
+      } else if (err.status === 400 || err.status === 401) {
+        setError('Неверный логин или пароль');
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <div className="auth-error">{error}</div>}
+      <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Логин" />
+      <input type="password" value={password}
+             onChange={e => setPassword(e.target.value)} placeholder="Пароль" />
+      <button type="submit" className="auth-submit" disabled={loading}>
+        {loading ? 'Входим…' : 'Войти'}
+      </button>
+      <Link to="/forgot-password">Забыли пароль?</Link>
+      <Link to="/register">Зарегистрироваться</Link>
+    </form>
+  );
+}

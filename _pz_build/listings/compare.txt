@@ -1,0 +1,39 @@
+export default function ComparePage() {
+  const { ids, remove, clear } = useCompare();
+  const { addToCart } = useCart();
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Загрузка выбранных для сравнения товаров
+  useEffect(() => {
+    if (ids.length === 0) { setItems([]); return; }
+    setLoading(true);
+    Promise.all(ids.map(id => productsApi.byId(id).catch(() => null)))
+      .then(list => setItems(list.filter(Boolean)))
+      .finally(() => setLoading(false));
+  }, [ids]);
+
+  if (ids.length === 0) {
+    return <EmptyState title="Список сравнения пуст. Добавьте товары через карточки."
+                       cta="В каталог" ctaHref="/catalog" />;
+  }
+  if (loading) return <Loading label="Загружаем сравнение..." />;
+
+  // Полный набор характеристик всех сравниваемых товаров
+  const allKeys = [...new Set(items.flatMap(p => Object.keys(p.specs || {})))];
+
+  return (
+    <div className="compare-page">
+      <h1>Сравнение ({items.length})</h1>
+      <button onClick={clear}>Очистить всё</button>
+      {/* таблица: по строкам allKeys выводятся значения характеристик каждого товара */}
+      {items.map(p => (
+        <div key={p.id} className="compare-col">
+          <span>{p.name}</span>
+          <button onClick={() => addToCart(p)}>В корзину</button>
+          <button onClick={() => remove(p.id)}>Убрать</button>
+        </div>
+      ))}
+    </div>
+  );
+}

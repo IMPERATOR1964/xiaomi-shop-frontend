@@ -1,0 +1,23 @@
+// Защита маршрутов панели управления: доступ только для сотрудников магазина
+export default function AdminGuard({ children, requireAdmin = false }) {
+  const { isAuthenticated, isAdmin, isStaff } = useAuth();
+  const location = useLocation();
+
+  // Неавторизованный пользователь перенаправляется на страницу входа
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Проверка наличия требуемой роли
+  const allowed = requireAdmin ? isAdmin : isStaff;
+  if (!allowed) {
+    return (
+      <div className="container">
+        <h2>Доступ запрещён</h2>
+        <p>Эта страница доступна только администраторам.</p>
+      </div>
+    );
+  }
+
+  return children;
+}

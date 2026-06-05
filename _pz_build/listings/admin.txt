@@ -1,0 +1,30 @@
+export default function AdminProductsPage() {
+  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+
+  // Дебаунс поиска: запрос уходит на сервер через 350 мс после ввода
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const fetchData = useCallback(async () => {
+    const q = debouncedQuery.trim();
+    const res = q
+      ? await productsApi.search(q, { size: 50 })
+      : await productsApi.filter(
+          { sortBy: 'newest', ...(categoryId ? { categoryId: Number(categoryId) } : {}) },
+          { size: 50 });
+    setItems(res.items);
+  }, [debouncedQuery, categoryId]);
+
+  return (
+    <div className="admin-products">
+      {/* таблица товаров с кнопками редактирования и удаления */}
+      <Link to="/admin/products/new" className="btn-primary">Добавить товар</Link>
+    </div>
+  );
+}

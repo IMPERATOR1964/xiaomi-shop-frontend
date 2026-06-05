@@ -1,0 +1,24 @@
+export const productsApi = {
+  // Список товаров с постраничной загрузкой
+  list: async (opts = {}) =>
+    adaptProductList(await get('/products', { params: pageParams(opts), auth: false })),
+
+  // Товар по идентификатору
+  byId: async (id) =>
+    adaptProduct(await get(`/products/${id}`, { auth: false })),
+
+  // Фильтрация по категории, цене, наличию и характеристикам
+  filter: async (filterRequest = {}, opts = {}) =>
+    adaptProductList(await post('/products/filter', filterRequest,
+                                { params: pageParams(opts), auth: false })),
+
+  // Полнотекстовый поиск товаров
+  search: async (query, opts = {}) =>
+    adaptProductList(await get('/products/search',
+                               { params: { q: query, ...pageParams(opts) }, auth: false })),
+
+  // Похожие товары для блока на карточке
+  similar: async (id, limit = 8) =>
+    (await get(`/products/${id}/similar`,
+               { params: { limit }, auth: false }) || []).map(adaptProduct),
+};

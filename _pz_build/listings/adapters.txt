@@ -1,0 +1,33 @@
+// Преобразование объекта товара, полученного от сервера,
+// во внутреннее представление, используемое интерфейсом
+export function adaptProduct(dto) {
+  if (!dto) return null;
+
+  // Определение категории по идентификатору или по названию
+  const slug = categorySlugByBackendId(dto.categoryId) !== 'all'
+    ? categorySlugByBackendId(dto.categoryId)
+    : categorySlugByBackendName(dto.categoryName);
+
+  const price = typeof dto.price === 'string' ? Number(dto.price) : dto.price;
+
+  // Галерея изображений: первый адрес используется как основной
+  const gallery = Array.isArray(dto.imageUrls)
+    ? dto.imageUrls.map(normalizeImageUrl).filter(Boolean)
+    : [];
+
+  return {
+    id:            dto.id,
+    name:          dto.name,
+    category:      slug,
+    categoryId:    dto.categoryId,
+    price,
+    oldPrice:      dto.oldPrice ?? null,
+    desc:          dto.description,
+    shortDesc:     makeShort(dto.description),
+    specs:         dto.attributes || {},
+    imageUrl:      gallery[0] || null,
+    imageUrls:     gallery,
+    averageRating: dto.averageRating || 0,
+    reviewsCount:  dto.reviewsCount || 0,
+  };
+}

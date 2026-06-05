@@ -1,0 +1,35 @@
+const MAX_COMPARE = 4;
+
+export function CompareProvider({ children }) {
+  const { toast } = useToast();
+  const [ids, setIds] = useState(() => {
+    const raw = localStorage.getItem('voltix-compare');
+    return raw ? JSON.parse(raw) : [];
+  });
+
+  const persist = (next) => {
+    setIds(next);
+    localStorage.setItem('voltix-compare', JSON.stringify(next));
+  };
+
+  // Добавление или удаление товара из сравнения с ограничением по количеству
+  const toggle = (id) => {
+    if (ids.includes(id)) {
+      persist(ids.filter(x => x !== id));
+    } else {
+      if (ids.length >= MAX_COMPARE) {
+        toast?.error?.(`Максимум ${MAX_COMPARE} товара в сравнении`);
+        return;
+      }
+      persist([...ids, id]);
+    }
+  };
+
+  const has = (id) => ids.includes(id);
+
+  return (
+    <CompareContext.Provider value={{ ids, toggle, has, clear: () => persist([]), count: ids.length }}>
+      {children}
+    </CompareContext.Provider>
+  );
+}

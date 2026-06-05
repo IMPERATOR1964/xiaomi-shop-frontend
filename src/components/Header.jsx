@@ -23,8 +23,12 @@ export default function Header() {
   const [cityOpen, setCityOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const cityRef = useRef(null);
   const searchRef = useRef(null);
+
+  // Закрываем мобильное меню при смене маршрута
+  useEffect(() => { setMobileOpen(false); }, [routerLoc.pathname, routerLoc.search]);
 
   // Закрытие селектора локации по клику вне
   useEffect(() => {
@@ -187,9 +191,61 @@ export default function Header() {
             </Link>
           )}
 
-          <button className="mobile-menu-btn">☰</button>
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setMobileOpen(o => !o)}
+            aria-label="Меню"
+          >
+            {mobileOpen
+              ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              : <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            }
+          </button>
         </div>
       </div>
+
+      {/* Мобильное меню */}
+      {mobileOpen && (
+        <div className="mobile-menu">
+          {/* Поиск в мобильном меню */}
+          <form className="mobile-menu-search" onSubmit={submitSearch}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input
+              type="text"
+              value={searchValue}
+              onChange={e => setSearchValue(e.target.value)}
+              placeholder="Поиск товаров..."
+            />
+          </form>
+
+          <Link to="/" className="mobile-menu-link">Главная</Link>
+          <Link to="/catalog" className="mobile-menu-link">Каталог</Link>
+          <Link to="/favorites" className="mobile-menu-link">Избранное {favCount > 0 && <span className="mobile-menu-count">{favCount}</span>}</Link>
+          <Link to="/compare" className="mobile-menu-link">Сравнение {cmpCount > 0 && <span className="mobile-menu-count">{cmpCount}</span>}</Link>
+          <Link to="/cart" className="mobile-menu-link">Корзина {cartCount > 0 && <span className="mobile-menu-count">{cartCount}</span>}</Link>
+          <Link to={user ? '/profile' : '/login'} className="mobile-menu-link">
+            {user ? 'Профиль' : 'Войти'}
+          </Link>
+          {isStaff && (
+            <Link to="/admin" className="mobile-menu-link" style={{ color: 'var(--accent)' }}>Админ-панель</Link>
+          )}
+
+          {/* Город */}
+          <div className="mobile-menu-cities">
+            {CITIES.map(c => (
+              <button
+                key={c.id}
+                className={`mobile-menu-city ${c.id === city.id ? 'active' : ''}`}
+                onClick={() => { changeCity(c.id); }}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

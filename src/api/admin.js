@@ -1,7 +1,6 @@
 // Админ-эндпоинты бэка v4:
 //   POST   /api/admin/products/{id}/image  (multipart/form-data, поле 'file')  → ProductResponse
 //   DELETE /api/admin/products/{id}/image                                       → ProductResponse
-//   GET    /api/admin/stats/dashboard                                           → AdminDashboardResponse
 //   POST   /api/admin/categories            { name, description? }             → CategoryResponse
 //   PUT    /api/admin/categories/{id}       { name, description? }             → CategoryResponse
 //   DELETE /api/admin/categories/{id}                                           → 204
@@ -83,9 +82,6 @@ export const adminApi = {
     });
     return adaptProduct(data);
   },
-
-  // ===== Сводка =====
-  dashboard: () => get('/admin/stats/dashboard'),
 
   // ===== Категории =====
   categories: {

@@ -1,0 +1,29 @@
+export default function ProductCard({ product, index = 0 }) {
+  const { addToCart } = useCart();
+  const { has: isFav, toggle: toggleFav } = useFavorites();
+  const { has: isCmp, toggle: toggleCmp } = useCompare();
+
+  const fav = isFav(product.id);
+  const cmp = isCmp(product.id);
+  // Отменяем переход по ссылке при нажатии на кнопки внутри карточки
+  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+
+  return (
+    <div className="product-card">
+      <Link to={`/product/${product.id}`} className="product-card-image">
+        {product.badge && <span className="product-card-badge">{badgeText}</span>}
+        <button className={fav ? 'active' : ''}
+                onClick={(e) => { stop(e); toggleFav(product.id); }}>В избранное</button>
+        <button className={cmp ? 'active' : ''}
+                onClick={(e) => { stop(e); toggleCmp(product.id); }}>К сравнению</button>
+        <ProductImage src={product.imageUrl} category={product.category} />
+      </Link>
+      <div className="product-card-body">
+        <Link to={`/product/${product.id}`}>{product.name}</Link>
+        <p>{product.shortDesc}</p>
+        <span className="product-card-price">{formatPrice(product.price)}</span>
+        <button onClick={(e) => { stop(e); addToCart(product); }}>В корзину</button>
+      </div>
+    </div>
+  );
+}

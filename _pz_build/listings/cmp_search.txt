@@ -1,0 +1,39 @@
+// Выпадающий блок живого поиска с задержкой запроса (debounce)
+export default function SearchDropdown({ query, onSelect }) {
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(false);
+  const reqRef = useRef(0); // защита от гонки запросов
+
+  useEffect(() => {
+    const q = (query || '').trim();
+    if (q.length < 2) { setItems([]); return; }
+
+    const reqId = ++reqRef.current;
+    setLoading(true);
+    // Запрос отправляется через 300 мс после последнего ввода
+    const t = setTimeout(async () => {
+      try {
+        const res = await productsApi.search(q, { page: 0, size: 8 });
+        if (reqId !== reqRef.current) return; // пришёл устаревший ответ
+        setItems(res.items);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  if (!query || query.trim().length < 2) return null;
+
+  return (
+    <div className="search-dropdown">
+      {loading && <div className="search-loading">Поиск…</div>}
+      {items.map(p => (
+        <Link key={p.id} to={`/product/${p.id}`} onClick={onSelect}>
+          <span>{p.name}</span>
+          <span>{formatPrice(p.price)}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,29 @@
+// Сбор доступных вариантов товара (цвета и объёмы памяти) из общей группы
+export const getProductVariants = (product) => {
+  const key = groupKey(product);
+  if (!key) return { variants: [product], colors: [], memories: [] };
+
+  const variants = PRODUCTS.filter(p =>
+    p.category === product.category && groupKey(p) === key);
+
+  const colors = [...new Set(
+    variants.map(v => v.specs?.['Цвет']).filter(Boolean))];
+  const memories = [...new Set(
+    variants
+      .filter(v => v.specs?.['Объём ОЗУ'] && v.specs?.['Объём накопителя'])
+      .map(v => `${v.specs['Объём ОЗУ']} / ${v.specs['Объём накопителя']}`))];
+
+  return { variants, colors, memories };
+};
+
+// Поиск товара-варианта по выбранным цвету и объёму памяти
+export const findVariantByOptions = (product, { color, memory }) => {
+  const { variants } = getProductVariants(product);
+  return variants.find(v => {
+    const c = v.specs?.['Цвет'];
+    const m = v.specs?.['Объём ОЗУ'] && v.specs?.['Объём накопителя']
+      ? `${v.specs['Объём ОЗУ']} / ${v.specs['Объём накопителя']}`
+      : null;
+    return (!color || c === color) && (!memory || m === memory);
+  });
+};

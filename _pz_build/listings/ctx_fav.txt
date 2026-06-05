@@ -1,0 +1,28 @@
+export function FavoritesProvider({ children }) {
+  const { isAuthenticated } = useAuth();
+  const [ids, setIds] = useState(readLocal);
+
+  // При входе гостевые избранные переносятся на сервер,
+  // после чего актуальный список загружается с сервера
+  useEffect(() => {
+    const syncFromServer = async () => {
+      const local = readLocal();
+      if (local.length) {
+        await Promise.allSettled(local.map(id => wishlistApi.add(id)));
+        writeLocal([]);
+      }
+      const res = await wishlistApi.list({ size: 200 });
+      setIds(res.items.map(p => p.id));
+    };
+    if (isAuthenticated) syncFromServer();
+    else                 setIds(readLocal());
+  }, [isAuthenticated]);
+
+  const has = (id) => ids.includes(id);
+
+  return (
+    <FavoritesContext.Provider value={{ ids, has, toggle, count: ids.length }}>
+      {children}
+    </FavoritesContext.Provider>
+  );
+}

@@ -1,11 +1,13 @@
 // Модалка-галерея фотографий. Открывается поверх страницы (не уводит на URL).
 // Листание: стрелки на экране, клавиши ←/→, превьюшки снизу. Esc / клик по фону — закрыть.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import '../styles/lightbox.css';
 
 export default function Lightbox({ images = [], startIndex = 0, onClose }) {
   const [idx, setIdx] = useState(startIndex);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
 
   const prev = useCallback(
     () => setIdx(i => (i - 1 + images.length) % images.length),
@@ -17,6 +19,24 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
   );
 
   useEffect(() => { setIdx(startIndex); }, [startIndex]);
+
+  // Свайп по фото на мобильном.
+  const onTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const onTouchEnd = (e) => {
+    if (touchStartX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    // Горизонтальный свайп длиннее вертикального и > 40px
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) next();
+      else        prev();
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -51,8 +71,13 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
         </button>
       )}
 
-      <div className="lightbox-stage" onClick={(e) => e.stopPropagation()}>
-        <img src={images[idx]} alt="" className="lightbox-img" />
+      <div
+        className="lightbox-stage"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <img src={images[idx]} alt="" className="lightbox-img" draggable="false" />
       </div>
 
       {images.length > 1 && (

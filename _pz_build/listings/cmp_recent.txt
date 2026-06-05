@@ -1,0 +1,28 @@
+export default function RecentlyViewed({ excludeId, count = 8,
+                                        title = 'Вы недавно смотрели' }) {
+  const { ids } = useHistory();
+  const filtered = ids.filter(id => id !== Number(excludeId)).slice(0, count);
+
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Загрузка ранее просмотренных товаров по их идентификаторам
+  useEffect(() => {
+    if (filtered.length === 0) { setItems([]); return; }
+    setLoading(true);
+    Promise.all(filtered.map(id => productsApi.byId(id).catch(() => null)))
+      .then(list => setItems(list.filter(Boolean)))
+      .finally(() => setLoading(false));
+  }, [filtered.join(',')]);
+
+  if (filtered.length === 0 || (!loading && items.length === 0)) return null;
+
+  return (
+    <section className="similar">
+      <h2 className="similar-title">{title}</h2>
+      <div className="products-grid">
+        {items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+      </div>
+    </section>
+  );
+}

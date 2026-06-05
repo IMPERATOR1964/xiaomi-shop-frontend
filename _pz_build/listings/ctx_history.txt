@@ -1,0 +1,26 @@
+const MAX = 15;
+
+export function HistoryProvider({ children }) {
+  const [ids, setIds] = useState(read);
+
+  // Запоминаем просмотренный товар: он становится первым в списке,
+  // а сам список ограничивается последними MAX товарами
+  const track = useCallback((productId) => {
+    if (productId == null) return;
+    setIds(prev => {
+      const next = [productId, ...prev.filter(x => x !== productId)].slice(0, MAX);
+      write(next);
+      return next;
+    });
+  }, []);
+
+  const clear = useCallback(() => { write([]); setIds([]); }, []);
+
+  return (
+    <HistoryContext.Provider value={{ ids, track, clear }}>
+      {children}
+    </HistoryContext.Provider>
+  );
+}
+
+export const useHistory = () => useContext(HistoryContext);

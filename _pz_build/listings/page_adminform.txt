@@ -1,0 +1,41 @@
+export default function AdminProductFormPage() {
+  const { id } = useParams();
+  const isEdit = !!id;
+  const navigate = useNavigate();
+  const { categories: CATEGORIES } = useCategories();
+
+  const [name, setName]               = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice]             = useState('');
+  const [categoryId, setCategoryId]   = useState('');
+  const [imageUrls, setImageUrls]     = useState([]);
+  const [error, setError]             = useState('');
+
+  // При редактировании загружаем данные товара в форму
+  useEffect(() => {
+    if (!isEdit) return;
+    productsApi.byId(id).then(p => {
+      setName(p.name || '');
+      setDescription(p.desc || '');
+      setPrice(String(p.price ?? ''));
+      setCategoryId(String(p.categoryId ?? ''));
+      setImageUrls(p.imageUrls || []);
+    });
+  }, [id, isEdit]);
+
+  // Сохранение: создание нового или обновление существующего товара
+  const save = async (e) => {
+    e.preventDefault();
+    const payload = { name, description, price: Number(price),
+                      categoryId: Number(categoryId), imageUrls };
+    try {
+      if (isEdit) await productsApi.update(id, payload);
+      else        await productsApi.create(payload);
+      navigate('/admin/products');
+    } catch (err) {
+      setError(err.message || 'Не удалось сохранить товар');
+    }
+  };
+
+  return ( /* форма с полями товара, выбором категории и загрузкой фотографий */ );
+}

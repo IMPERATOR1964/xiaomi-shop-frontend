@@ -1,0 +1,27 @@
+export const authApi = {
+  // Регистрация нового пользователя
+  register: ({ username, email, password }) =>
+    post('/auth/register', { username, email, password }, { auth: false }),
+
+  // Вход: при успехе маркеры доступа сохраняются в хранилище
+  login: async ({ username, password }) => {
+    const res = await post('/auth/login', { username, password }, { auth: false });
+    if (res?.token) tokenStore.set(res.token, res.refreshToken);
+    return res;
+  },
+
+  // Выход: очистка сохранённых маркеров
+  logout: () => tokenStore.clear(),
+
+  // Подтверждение адреса электронной почты по коду
+  verifyEmail: ({ email, code }) =>
+    post('/auth/verify-email', { email, code }, { auth: false }),
+
+  // Запрос на восстановление пароля
+  forgotPassword: (email) =>
+    post('/auth/forgot-password', { email }, { auth: false }),
+
+  // Установка нового пароля по коду из письма
+  resetPassword: ({ email, code, newPassword }) =>
+    post('/auth/reset-password', { email, code, newPassword }, { auth: false }),
+};

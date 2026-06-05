@@ -1,0 +1,21 @@
+// Карточка категории на главной странице: переход в каталог категории
+export default function CategoryCard({ category, count, fromPrice }) {
+  return (
+    <Link
+      to={category.id === 'all' ? '/catalog' : `/catalog/${category.id}`}
+      className="cat-card"
+    >
+      <div className="cat-card-info">
+        <h3 className="cat-card-title">{category.label}</h3>
+        {fromPrice != null && (
+          <p className="cat-card-from">от {fromPrice.toLocaleString('ru-RU')} ₽</p>
+        )}
+        <span className="cat-card-link">Перейти</span>
+      </div>
+      <div className="cat-card-icon">
+        <CategoryIcon category={category.id} size={64} />
+      </div>
+      {count != null && <span className="cat-card-count">{count}</span>}
+    </Link>
+  );
+}

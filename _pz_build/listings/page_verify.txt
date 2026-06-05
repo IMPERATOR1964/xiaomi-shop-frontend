@@ -1,0 +1,32 @@
+export default function VerifyEmailPage() {
+  const { verifyEmail, resendVerification } = useAuth();
+  const navigate = useNavigate();
+  const { state } = useLocation();
+  const [email] = useState(state?.email || '');
+  const [code, setCode]   = useState('');
+  const [error, setError] = useState('');
+
+  // Подтверждение адреса электронной почты по коду из письма
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (code.length !== 5) return setError('Введите 5-значный код');
+    try {
+      await verifyEmail({ email, code });
+      navigate('/profile');
+    } catch (err) {
+      setError(err.message || 'Неверный код подтверждения');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <div className="auth-error">{error}</div>}
+      <p>Код подтверждения отправлен на {email}</p>
+      <input value={code} onChange={e => setCode(e.target.value)} placeholder="Код из письма" />
+      <button type="submit" className="auth-submit">Подтвердить</button>
+      <button type="button" onClick={() => resendVerification(email)}>
+        Отправить код повторно
+      </button>
+    </form>
+  );
+}

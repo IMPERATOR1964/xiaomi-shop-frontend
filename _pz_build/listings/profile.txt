@@ -1,0 +1,28 @@
+export default function ProfilePage() {
+  const { user, logout, updateUser, isStaff } = useAuth();
+  const { count: favCount } = useFavorites();
+  const { cartCount } = useCart();
+  const navigate = useNavigate();
+
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState('');
+
+  // Доступ к личному кабинету — только для авторизованного пользователя
+  useEffect(() => {
+    if (!user) navigate('/login');
+  }, [user, navigate]);
+
+  const saveEdit = () => {
+    if (draftName.trim()) updateUser({ name: draftName.trim() });
+    setEditing(false);
+  };
+
+  return (
+    <div className="profile-page">
+      <h1>{user.name}</h1>
+      {/* данные профиля, история заказов и их статусы */}
+      {isStaff && <Link to="/admin">Панель управления</Link>}
+      <button onClick={logout}>Выйти</button>
+    </div>
+  );
+}

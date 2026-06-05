@@ -1,0 +1,31 @@
+// Индикатор загрузки данных
+export function Loading({ label = 'Загружаем...' }) {
+  return (
+    <div className="ui-state">
+      <div className="ui-spinner" />
+      <p className="ui-state-text">{label}</p>
+    </div>
+  );
+}
+
+// Сообщение об ошибке с возможностью повторить действие
+export function ErrorState({ message = 'Что-то пошло не так', onRetry }) {
+  return (
+    <div className="ui-state">
+      <p className="ui-state-text">{message}</p>
+      {onRetry && (
+        <button className="btn-outline btn-sm" onClick={onRetry}>Повторить</button>
+      )}
+    </div>
+  );
+}
+
+// Сообщение об отсутствии данных с переходом к нужному разделу
+export function EmptyState({ title = 'Ничего не найдено', cta, ctaHref }) {
+  return (
+    <div className="ui-state">
+      <p className="ui-state-text">{title}</p>
+      {cta && ctaHref && <Link to={ctaHref} className="btn-primary">{cta}</Link>}
+    </div>
+  );
+}

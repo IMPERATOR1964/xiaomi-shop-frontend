@@ -1,0 +1,33 @@
+const KEY = 'voltix-cookie-notice-dismissed';
+
+// Уведомление об использовании технических cookies.
+// После подтверждения пользователем больше не показывается
+export default function CookieNotice() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem(KEY)) {
+      const t = setTimeout(() => setVisible(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  const dismiss = () => {
+    localStorage.setItem(KEY, '1');
+    setVisible(false);
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div className="cookie-notice" role="status">
+      <p className="cookie-notice-text">
+        Сайт использует технические cookies, необходимые для авторизации,
+        сохранения сессии и работы корзины.
+      </p>
+      <button type="button" className="cookie-notice-btn" onClick={dismiss}>
+        Понятно
+      </button>
+    </div>
+  );
+}

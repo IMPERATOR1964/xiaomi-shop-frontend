@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CookieNotice from './components/CookieNotice';
@@ -19,7 +19,6 @@ import ProfilePage from './pages/ProfilePage';
 import FavoritesPage from './pages/FavoritesPage';
 import ComparePage from './pages/ComparePage';
 import AdminLayout from './pages/admin/AdminLayout';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminProductFormPage from './pages/admin/AdminProductFormPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
@@ -56,7 +55,7 @@ export default function App() {
 
           {/* Админка — только для ADMIN/MODERATOR (защищено в AdminLayout) */}
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index                  element={<AdminDashboardPage />} />
+            <Route index                  element={<Navigate to="products" replace />} />
             <Route path="products"        element={<AdminProductsPage />} />
             <Route path="products/new"    element={<AdminProductFormPage />} />
             <Route path="products/:id"    element={<AdminProductFormPage />} />

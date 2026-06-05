@@ -1,0 +1,42 @@
+export default function ProductVariants({ product }) {
+  const navigate = useNavigate();
+  const { variants, colors, memories } = getProductVariants(product);
+
+  // Если у товара нет вариантов, блок не отображается
+  if (variants.length <= 1 && colors.length <= 1 && memories.length <= 1) {
+    return null;
+  }
+
+  const currentColor = product.specs?.['Цвет'];
+
+  // Переход к другому варианту товара по выбранным цвету или памяти
+  const switchTo = (overrides) => {
+    const next = findVariantByOptions(product, {
+      color:  overrides.color  ?? currentColor,
+      memory: overrides.memory,
+    });
+    if (next && next.id !== product.id) navigate(`/product/${next.id}`);
+  };
+
+  return (
+    <div className="variants">
+      {memories.length > 1 && (
+        <div className="variants-row">
+          <span>Память:</span>
+          {memories.map(m => (
+            <button key={m} onClick={() => switchTo({ memory: m })}>{m}</button>
+          ))}
+        </div>
+      )}
+      {colors.length > 1 && (
+        <div className="variants-row">
+          <span>Цвет:</span>
+          {colors.map(c => (
+            <button key={c} className={c === currentColor ? 'active' : ''}
+                    onClick={() => switchTo({ color: c })}>{c}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

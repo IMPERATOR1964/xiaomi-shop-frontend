@@ -257,7 +257,92 @@
   justify-content: center;
   background: transparent;
   color: var(--text-primary);
-  font-size: 22px;
+}
+
+/* Мобильное меню (выпадает под хедером) */
+.mobile-menu {
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  animation: mobile-menu-in 0.2s ease;
+}
+
+@keyframes mobile-menu-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mobile-menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 44px;
+  background: var(--bg-input);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+.mobile-menu-search svg { color: var(--text-muted); flex-shrink: 0; }
+.mobile-menu-search input {
+  flex: 1;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+.mobile-menu-search input::placeholder { color: var(--text-muted); }
+
+.mobile-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.mobile-menu-link:hover,
+.mobile-menu-link:active { background: var(--bg-hover); }
+
+.mobile-menu-count {
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 100px;
+}
+
+.mobile-menu-cities {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+.mobile-menu-city {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.mobile-menu-city.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
 }
 
 @media (max-width: 1100px) {
@@ -270,7 +355,11 @@
 }
 
 @media (max-width: 768px) {
-  .header-search { display: none; }
+  .header-search-wrap { display: none; }
   .city-btn { padding: 8px; }
   .mobile-menu-btn { display: flex; }
+  /* На мобильном прячем второстепенные иконки — они есть в мобильном меню.
+     Оставляем только корзину, профиль, тему и бургер. */
+  .header-actions .header-btn[title="Сравнение"],
+  .header-actions .header-btn[title="Избранное"] { display: none; }
 }
