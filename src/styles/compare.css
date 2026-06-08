@@ -33,6 +33,18 @@
   min-width: 720px;
 }
 
+/* Один товар: карточка сжимается по содержимому и центрируется на странице,
+   чтобы товар не «висел» в правой половине широкой таблицы. */
+.compare-table-wrap--single {
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+.compare-table--single {
+  width: auto;
+  min-width: 0;
+}
+
 .compare-table th,
 .compare-table td {
   padding: 14px 16px;

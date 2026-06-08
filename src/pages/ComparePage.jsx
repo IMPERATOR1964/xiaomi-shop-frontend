@@ -63,8 +63,8 @@ export default function ComparePage() {
             <h2 className="compare-group-title">
               {CATEGORIES.find(c => c.id === catId)?.label || catId}
             </h2>
-            <div className="compare-table-wrap">
-              <table className="compare-table">
+            <div className={`compare-table-wrap ${products.length === 1 ? 'compare-table-wrap--single' : ''}`}>
+              <table className={`compare-table ${products.length === 1 ? 'compare-table--single' : ''}`}>
                 <thead>
                   <tr>
                     <th></th>
