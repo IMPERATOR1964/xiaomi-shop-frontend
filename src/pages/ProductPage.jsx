@@ -31,6 +31,18 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null); // null = закрыт
+  const [broken, setBroken] = useState(() => new Set());    // url'ы фото, которые не загрузились
+
+  // Помечаем картинку как битую — она исчезнет из галереи и счётчика.
+  const markBroken = (url) => {
+    if (!url) return;
+    setBroken(prev => {
+      if (prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -70,10 +82,11 @@ export default function ProductPage() {
   const reviewsCount = product.reviewsCount || 0;
 
   // Единая галерея: сначала фото товара, затем фото из всех отзывов.
-  const productImages = (product.imageUrls && product.imageUrls.length)
+  const productImages = ((product.imageUrls && product.imageUrls.length)
     ? product.imageUrls
-    : (product.imageUrl ? [product.imageUrl] : []);
-  const reviewImages = getReviews(product.id).flatMap(r => r.photos || []);
+    : (product.imageUrl ? [product.imageUrl] : []))
+    .filter(u => !broken.has(u));
+  const reviewImages = getReviews(product.id).flatMap(r => r.photos || []).filter(u => !broken.has(u));
   const galleryImages = [...productImages, ...reviewImages];
 
   // Открыть лайтбокс на фото товара (index в общем списке)
@@ -255,7 +268,7 @@ export default function ProductPage() {
         )}
 
         <section id="reviews" style={{ scrollMarginTop: 80 }}>
-          <ProductReviews productId={product.id} onPhotoClick={openReviewPhoto} />
+          <ProductReviews productId={product.id} onPhotoClick={openReviewPhoto} onPhotoError={markBroken} />
         </section>
 
         <SimilarProducts productId={product.id} />
@@ -268,6 +281,7 @@ export default function ProductPage() {
           images={galleryImages}
           startIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
+          onImageError={markBroken}
         />
       )}
     </div>

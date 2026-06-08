@@ -58,7 +58,7 @@ const formatDate = (iso) => {
   catch { return ''; }
 };
 
-export default function ProductReviews({ productId, onPhotoClick }) {
+export default function ProductReviews({ productId, onPhotoClick, onPhotoError }) {
   const { loadReviews, addReview, updateReview, removeReview,
           getReviews, getAverageRating, getReviewsCount } = useReviews();
   const { isAuthenticated, user } = useAuth();
@@ -346,7 +346,7 @@ export default function ProductReviews({ productId, onPhotoClick }) {
                               src={src}
                               alt=""
                               loading="lazy"
-                              onError={(e) => { e.currentTarget.closest('.review-photo-view').style.display = 'none'; }}
+                              onError={(e) => { e.currentTarget.closest('.review-photo-view').style.display = 'none'; onPhotoError?.(src); }}
                             />
                           </button>
                         ))}

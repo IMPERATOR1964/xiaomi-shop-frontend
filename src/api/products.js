@@ -83,5 +83,9 @@ export const productsApi = {
   update: async (id, body) => adaptProduct(await put(`/products/${id}`, body)),
   softDelete: (id) => del(`/products/${id}`),
   restore: async (id) => adaptProduct(await post(`/products/${id}/restore`)),
+  // ВНИМАНИЕ: полное (необратимое) удаление. Требует эндпоинт на бэке:
+  //   DELETE /api/admin/products/{id} → 204 (ADMIN) — см. BACKEND_TODO.md п.11
+  // Пока бэк не реализует — вернёт 404/405, фронт покажет понятное сообщение.
+  hardDelete: (id) => del(`/admin/products/${id}`),
   clearCache: () => post('/products/cache/clear'),
 };

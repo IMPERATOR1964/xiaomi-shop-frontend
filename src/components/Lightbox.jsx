@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../styles/lightbox.css';
 
-export default function Lightbox({ images = [], startIndex = 0, onClose }) {
+export default function Lightbox({ images = [], startIndex = 0, onClose, onImageError }) {
   const [idx, setIdx] = useState(startIndex);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
@@ -19,6 +19,11 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
   );
 
   useEffect(() => { setIdx(startIndex); }, [startIndex]);
+
+  // Если список картинок сократился (битые удалились) — не выходим за границы.
+  useEffect(() => {
+    if (idx > images.length - 1) setIdx(Math.max(0, images.length - 1));
+  }, [images.length, idx]);
 
   // Свайп по фото на мобильном.
   const onTouchStart = (e) => {
@@ -77,7 +82,13 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        <img src={images[idx]} alt="" className="lightbox-img" draggable="false" />
+        <img
+          src={images[idx]}
+          alt=""
+          className="lightbox-img"
+          draggable="false"
+          onError={() => onImageError?.(images[idx])}
+        />
       </div>
 
       {images.length > 1 && (
@@ -100,7 +111,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
               className={`lightbox-thumb ${i === idx ? 'active' : ''}`}
               onClick={() => setIdx(i)}
             >
-              <img src={src} alt="" />
+              <img src={src} alt="" onError={() => onImageError?.(src)} />
             </button>
           ))}
         </div>

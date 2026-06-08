@@ -43,6 +43,7 @@ export default function AdminProductsPage() {
         : await productsApi.filter(
             {
               sortBy: 'newest',
+              includeInactive: showInactive, // бэк отдаёт скрытые товары только при этом флаге (и только админу)
               ...(categoryId ? { categoryId: Number(categoryId) } : {}),
             },
             { page, size: 50 },
@@ -82,7 +83,7 @@ export default function AdminProductsPage() {
       })
       .catch(err => setError(err?.message || 'Не удалось загрузить'))
       .finally(() => setLoading(false));
-  }, [debouncedQuery, categoryId, page]);
+  }, [debouncedQuery, categoryId, page, showInactive]);
 
   useEffect(() => {
     fetchData();
@@ -104,6 +105,32 @@ export default function AdminProductsPage() {
       fetchData();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Не удалось восстановить');
+    }
+  };
+
+  const handleHardDelete = async (p) => {
+    const ok = confirm(
+      `Удалить товар «${p.name}» НАВСЕГДА?\n\n` +
+      'Запись будет полностью удалена из базы — это необратимо.\n' +
+      'Если нужно лишь временно убрать товар из каталога — используйте «Скрыть».'
+    );
+    if (!ok) return;
+    try {
+      await productsApi.hardDelete(p.id);
+      fetchData();
+    } catch (err) {
+      const status = err?.status;
+      if (status === 404 || status === 405 || status === 501) {
+        alert(
+          'Полное удаление пока не поддерживается бэкендом.\n' +
+          'Нужен эндпоинт DELETE /api/admin/products/{id} (см. BACKEND_TODO.md, п.11).\n' +
+          'Пока можно использовать «Скрыть».'
+        );
+      } else if (status === 409) {
+        alert('Нельзя удалить: товар используется в заказах. Используйте «Скрыть».');
+      } else {
+        alert(err instanceof ApiError ? err.message : 'Не удалось удалить');
+      }
     }
   };
 
@@ -137,7 +164,7 @@ export default function AdminProductsPage() {
           <input
             type="checkbox"
             checked={showInactive}
-            onChange={e => setShowInactive(e.target.checked)}
+            onChange={e => { setPage(0); setShowInactive(e.target.checked); }}
           />
           Показывать неактивные
         </label>
@@ -162,7 +189,7 @@ export default function AdminProductsPage() {
                     <th>Цена</th>
                     <th>Остаток</th>
                     <th>Статус</th>
-                    <th style={{ width: 220 }}></th>
+                    <th style={{ width: 300 }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,9 +239,14 @@ export default function AdminProductsPage() {
                               : <button
                                   className="btn-outline btn-sm"
                                   onClick={() => handleSoftDelete(p.id)}
-                                  style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
                                 >Скрыть</button>
                             }
+                            <button
+                              className="btn-outline btn-sm"
+                              onClick={() => handleHardDelete(p)}
+                              style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                              title="Полностью удалить товар из базы (необратимо)"
+                            >Удалить</button>
                           </div>
                         </td>
                       </tr>

@@ -100,6 +100,35 @@ export default function AdminProductFormPage() {
     }
   };
 
+  const handleHardDelete = async () => {
+    const ok = confirm(
+      `Удалить товар «${name}» НАВСЕГДА?\n\n` +
+      'Запись будет полностью удалена из базы — это необратимо.\n' +
+      'Если нужно лишь временно убрать товар из каталога — снимите галочку «Активен».'
+    );
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await productsApi.hardDelete(id);
+      navigate('/admin/products');
+    } catch (err) {
+      const status = err?.status;
+      if (status === 404 || status === 405 || status === 501) {
+        setError(
+          'Полное удаление пока не поддерживается бэкендом. ' +
+          'Нужен эндпоинт DELETE /api/admin/products/{id} (см. BACKEND_TODO.md, п.11). ' +
+          'Пока можно снять галочку «Активен», чтобы скрыть товар.'
+        );
+      } else if (status === 409) {
+        setError('Нельзя удалить: товар используется в заказах. Снимите «Активен», чтобы скрыть.');
+      } else {
+        setError(err instanceof ApiError ? err.message : 'Не удалось удалить');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (loading)   return <Loading label="Загружаем товар..." />;
   if (loadError) return <ErrorState message={loadError} />;
 
@@ -213,6 +242,33 @@ export default function AdminProductFormPage() {
           <button type="submit" className="btn-primary" disabled={busy} style={{ marginTop: 8 }}>
             {busy ? 'Сохраняем…' : (isEdit ? 'Сохранить изменения' : 'Создать товар')}
           </button>
+
+          {isEdit && (
+            <div
+              style={{
+                marginTop: 24,
+                paddingTop: 16,
+                borderTop: '1px solid var(--border)',
+              }}
+            >
+              <label className="form-label" style={{ color: 'var(--danger)' }}>
+                Опасная зона
+              </label>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 10px' }}>
+                Полное удаление товара из базы. Действие необратимо.
+                Для временного скрытия снимите галочку «Активен».
+              </p>
+              <button
+                type="button"
+                className="btn-outline btn-sm"
+                onClick={handleHardDelete}
+                disabled={busy}
+                style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+              >
+                Удалить товар навсегда
+              </button>
+            </div>
+          )}
         </form>
 
         {/* Правая колонка — фото */}
