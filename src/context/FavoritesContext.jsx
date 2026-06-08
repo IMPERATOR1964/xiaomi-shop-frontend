@@ -34,9 +34,9 @@ export function FavoritesProvider({ children }) {
           await Promise.allSettled(local.map(id => wishlistApi.add(id)));
           writeLocal([]);
         }
-        const res = await wishlistApi.list({ size: 200 });
+        const productIds = await wishlistApi.listIds({ size: 200 });
         if (!alive) return;
-        setIds(res.items.map(p => p.id));
+        setIds(productIds);
       } catch {
         // оставляем локальный список
       } finally {

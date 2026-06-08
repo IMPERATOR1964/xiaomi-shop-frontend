@@ -54,15 +54,16 @@
 }
 
 .compare-product-cell {
-  text-align: center;
+  text-align: left;
   font-weight: 400;
   position: relative;
+  width: 240px;
 }
 
 .compare-product-img {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   height: 80px;
   margin-bottom: 8px;
 }
@@ -92,7 +93,7 @@
 .compare-product-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
 }
 

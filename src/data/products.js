@@ -348,7 +348,9 @@ export const PRODUCTS = [
 ];
 
 export const formatPrice = (price) => {
-  return price.toLocaleString('ru-RU') + ' ₽';
+  const n = Number(price);
+  if (price == null || Number.isNaN(n)) return '—';
+  return n.toLocaleString('ru-RU') + ' ₽';
 };
 
 // =========================================================
