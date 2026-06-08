@@ -154,8 +154,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Рекомендации — только если есть история или избранное */}
-      {(recs.loading || recs.items.length > 0) && (
+      {/* Рекомендации — показываем только когда реально есть что показать (без мигания) */}
+      {recs.items.length > 0 && (
         <section className="container" style={{ paddingBottom: '48px' }}>
           <div className="section-header">
             <h2 className="section-title">Рекомендуем вам</h2>
@@ -166,10 +166,7 @@ export default function HomePage() {
             )}
           </div>
           <div className="products-grid">
-            {recs.loading
-              ? <ProductCardSkeleton count={4} />
-              : recs.items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
-            }
+            {recs.items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         </section>
       )}

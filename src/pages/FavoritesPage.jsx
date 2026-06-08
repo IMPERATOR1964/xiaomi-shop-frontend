@@ -39,26 +39,30 @@ export default function FavoritesPage() {
     return () => { alive = false; };
   }, [isAuthenticated, ids]);
 
+  // Показываем только то, что реально в избранном сейчас (ids) — чтобы «Очистить всё»
+  // и удаление одного товара отражались мгновенно, не дожидаясь ответа сервера.
+  const visible = items.filter(p => ids.includes(p.id));
+
   return (
     <div className="catalog-page">
       <div className="container">
         <div className="catalog-toolbar" style={{ marginBottom: 20 }}>
           <h1 className="section-title" style={{ marginBottom: 0 }}>
-            Избранное {items.length > 0 && (
-              <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({items.length})</span>
+            Избранное {visible.length > 0 && (
+              <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({visible.length})</span>
             )}
           </h1>
-          {items.length > 0 && (
+          {visible.length > 0 && (
             <button className="catalog-filter-reset" onClick={clear}>Очистить всё</button>
           )}
         </div>
 
-        {loading
+        {loading && visible.length === 0
           ? <div className="products-grid"><ProductCardSkeleton count={6} /></div>
-          : items.length === 0
+          : visible.length === 0
           ? <EmptyState title="В избранном пока ничего нет" cta="Перейти в каталог" ctaHref="/catalog" />
           : <div className="products-grid">
-              {items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+              {visible.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>
         }
       </div>

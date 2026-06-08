@@ -54,16 +54,21 @@
 }
 
 .compare-product-cell {
-  text-align: left;
+  text-align: center;
   font-weight: 400;
   position: relative;
-  width: 240px;
+  width: 260px;
+}
+
+/* Значения характеристик — по центру, чтобы совпадали с фото/названием в шапке */
+.compare-table td:not(.compare-key) {
+  text-align: center;
 }
 
 .compare-product-img {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   height: 80px;
   margin-bottom: 8px;
 }
@@ -93,7 +98,7 @@
 .compare-product-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 6px;
 }
 
