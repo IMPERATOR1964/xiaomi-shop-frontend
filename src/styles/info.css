@@ -1,0 +1,42 @@
+.info-page {
+  padding: 40px 0 64px;
+}
+
+.info-content {
+  max-width: 760px;
+  margin-top: 8px;
+}
+
+.info-note {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.info-block {
+  margin-bottom: 22px;
+}
+
+.info-h {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.info-p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.info-muted {
+  color: var(--text-muted);
+  margin-top: 8px;
+}

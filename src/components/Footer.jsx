@@ -26,29 +26,22 @@ export default function Footer() {
 
           <div>
             <h4 className="footer-col-title">Покупателям</h4>
-            <a className="footer-link" href="#">Доставка и самовывоз</a>
-            <a className="footer-link" href="#">Способы оплаты</a>
-            <a className="footer-link" href="#">Гарантия и сервис</a>
-            <a className="footer-link" href="#">Возврат и обмен</a>
-            <a className="footer-link" href="#">Кредит и рассрочка</a>
-            <a className="footer-link" href="#">Бонусная программа</a>
-            <a className="footer-link" href="#">Подарочные сертификаты</a>
-            <a className="footer-link" href="#">Корпоративным клиентам</a>
-            <a className="footer-link" href="#">Часто задаваемые вопросы</a>
-            <a className="footer-link" href="#">Политика конфиденциальности</a>
-            <a className="footer-link" href="#">Договор оферты</a>
+            <Link className="footer-link" to="/info/privacy">Политика обработки информации</Link>
+            <Link className="footer-link" to="/info/terms">Пользовательское соглашение</Link>
+            <Link className="footer-link" to="/info/payment">Оплата</Link>
+            <Link className="footer-link" to="/info/contacts">Контакты</Link>
+            <Link className="footer-link" to="/info/delivery">Доставка</Link>
           </div>
 
           <div>
             <h4 className="footer-col-title">Контакты</h4>
             <a className="footer-link" href="tel:+78005553535">+7 (800) 555-35-35</a>
             <a className="footer-link" href="mailto:info@voltix.ru">info@voltix.ru</a>
-            <a className="footer-link" href="#">Время работы: 9:00–21:00</a>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <p className="footer-copy">© 2024 Voltix. Все права защищены.</p>
+          <p className="footer-copy">© 2026 Voltix. Все права защищены.</p>
         </div>
       </div>
     </footer>

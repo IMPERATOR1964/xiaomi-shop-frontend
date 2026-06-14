@@ -18,6 +18,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import FavoritesPage from './pages/FavoritesPage';
 import ComparePage from './pages/ComparePage';
+import InfoPage from './pages/InfoPage';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminProductFormPage from './pages/admin/AdminProductFormPage';
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/forgot-password"      element={<ForgotPasswordPage />} />
           <Route path="/reset-password"       element={<ResetPasswordPage />} />
           <Route path="/profile"              element={<ProfilePage />} />
+          <Route path="/info/:slug"           element={<InfoPage />} />
 
           {/* Админка — только для ADMIN/MODERATOR (защищено в AdminLayout) */}
           <Route path="/admin" element={<AdminLayout />}>

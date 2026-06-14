@@ -1,0 +1,13 @@
+const AdmZip=require('adm-zip');
+const DOCX='C:/Users/safik/Desktop/Сафиканов диплом 12.docx';
+const zip=new AdmZip(DOCX);
+let doc=zip.getEntry('word/document.xml').getData().toString('utf8');
+const OLD='Разработка клиентской части веб-сайта «Voltix» для продажи смартфонов Xiaomi и аксессуаров»';
+const NEW='РАЗРАБОТКА КЛИЕНТСКОЙ ЧАСТИ ВЕБ-САЙТА «VOLTIX» ДЛЯ ПРОДАЖИ СМАРТФОНОВ XIAOMI И АКСЕССУАРОВ»';
+const n=doc.split(OLD).length-1;
+console.log('вхождений названия:',n);
+if(n<1) process.exit(1);
+doc=doc.replace(OLD,NEW);
+zip.updateFile('word/document.xml',Buffer.from(doc,'utf8'));
+zip.writeZip(DOCX);
+console.log('OK: название темы на титуле -> ЗАГЛАВНЫМИ');
