@@ -47,17 +47,28 @@ export default function AdminCategoriesPage() {
   };
 
   const remove = async (cat) => {
-    if (cat.productsCount > 0) {
-      alert('Нельзя удалить категорию, в которой есть товары');
-      return;
-    }
     if (!confirm(`Удалить категорию «${cat.name}»?`)) return;
     try {
       await adminApi.categories.remove(cat.id);
       load();
       reloadCategories();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Не удалось удалить');
+      // Категория с товарами → бэк не даёт удалить обычным способом.
+      // Предлагаем force-удаление (вместе с товарами).
+      const aboutProducts = cat.productsCount > 0 || err?.status === 409 || /товар/i.test(err?.message || '');
+      if (aboutProducts) {
+        if (confirm(`В категории «${cat.name}» есть товары.\n\nУдалить категорию ВМЕСТЕ со всеми её товарами? Товары будут удалены безвозвратно (кроме тех, что уже есть в заказах).`)) {
+          try {
+            await adminApi.categories.remove(cat.id, { force: true });
+            load();
+            reloadCategories();
+          } catch (err2) {
+            alert(err2 instanceof ApiError ? err2.message : 'Не удалось удалить категорию');
+          }
+        }
+      } else {
+        alert(err instanceof ApiError ? err.message : 'Не удалось удалить');
+      }
     }
   };
 
@@ -142,8 +153,8 @@ export default function AdminCategoriesPage() {
                           <button
                             className="btn-outline btn-sm"
                             onClick={() => remove(c)}
-                            disabled={c.productsCount > 0}
-                            style={{ color: c.productsCount > 0 ? 'var(--text-muted)' : 'var(--danger)' }}
+                            style={{ color: 'var(--danger)' }}
+                            title={c.productsCount > 0 ? 'Удалит категорию вместе с товарами' : 'Удалить категорию'}
                           >Удалить</button>
                         </div>
                       </td>

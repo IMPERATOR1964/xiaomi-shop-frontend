@@ -46,7 +46,7 @@ export default function AdminProductsPage() {
               includeInactive: showInactive, // бэк отдаёт скрытые товары только при этом флаге (и только админу)
               ...(categoryId ? { categoryId: Number(categoryId) } : {}),
             },
-            { page, size: 50 },
+            { page, size: 50, auth: true }, // auth: true — иначе бэк сбросит includeInactive
           );
 
       // Если это похоже на SKU, доберём через bySku и поставим в начало (если ещё нет).

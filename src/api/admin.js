@@ -91,6 +91,9 @@ export const adminApi = {
     update: async (id, { name, description }) =>
       adaptCategory(await put(`/admin/categories/${id}`, { name, description })),
 
-    remove: (id) => del(`/admin/categories/${id}`),
+    // force: true → DELETE /admin/categories/{id}?force=true — удалит категорию
+    // ВМЕСТЕ со всеми её товарами (кроме тех, что есть в заказах).
+    remove: (id, { force = false } = {}) =>
+      del(`/admin/categories/${id}${force ? '?force=true' : ''}`),
   },
 };
