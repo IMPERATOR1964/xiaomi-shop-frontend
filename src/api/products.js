@@ -47,7 +47,7 @@ export const productsApi = {
   //   numericFilters: {}, numericRangeFilters: { 'Ёмкость': { min, max } },
   //   sortBy: 'price_asc'|'price_desc'|'newest'|'popular'|'rating'
   // }
-  // opts.auth = true → отправляем JWT (нужно для includeInactive в админке;
+  // opts.auth = true → отправляем JWT (нужно для onlyInactive в админке;
   // бэк игнорирует флаг для анонимов из соображений безопасности).
   filter: async (filterRequest = {}, opts = {}) => {
     const data = await post('/products/filter', filterRequest, {
