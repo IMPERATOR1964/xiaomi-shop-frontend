@@ -38,18 +38,19 @@ export default function AdminProductsPage() {
 
     const buildResults = async () => {
       // База поиска
-      let baseRes = await productsApi.filter(
-        {
-          sortBy: 'newest',
-          ...(q ? { query: q } : {}),
-          ...(showInactive ? { onlyInactive: true } : {}),
-          ...(categoryId ? { categoryId: Number(categoryId) } : {}),
-        },
-        { page, size: 50, auth: true },
-      );
+      let baseRes = q
+        ? await productsApi.search(q, { page, size: 50 })
+        : await productsApi.filter(
+            {
+              sortBy: 'newest',
+              includeInactive: showInactive, // бэк отдаёт скрытые товары только при этом флаге (и только админу)
+              ...(categoryId ? { categoryId: Number(categoryId) } : {}),
+            },
+            { page, size: 50, auth: true }, // auth: true — иначе бэк сбросит includeInactive
+          );
 
       // Если это похоже на SKU, доберём через bySku и поставим в начало (если ещё нет).
-      if (isSkuQuery && !showInactive) {
+      if (isSkuQuery) {
         try {
           const skuProduct = await productsApi.bySku(q);
           if (skuProduct) {
@@ -194,7 +195,7 @@ export default function AdminProductsPage() {
                 <tbody>
                   {items.map(p => {
                     const inactive = p.isActive === false;
-                    if (showInactive ? !inactive : inactive) return null;
+                    if (inactive && !showInactive) return null;
                     const cat = CATEGORIES.find(c => c.id === p.category);
                     return (
                       <tr key={p.id} className={inactive ? 'admin-row-inactive' : ''}>
